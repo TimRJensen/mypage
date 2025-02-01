@@ -17,6 +17,7 @@
 button {
     border: none;
     background-color: transparent;
+    cursor: pointer;
 }
 
 button svg {
@@ -171,43 +172,45 @@ button svg {
     animation: msg-in-out 3s forwards;
 }
 
-#canvas-box #aid {
-    display: none;
+.button-box {
     position: absolute;
-    left: 50%;
-    top: 76.5%;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.3);
-    z-index: 99;
-    transform: translate(-50%, -50%) rotateX(45deg);
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    padding: 0 20px;
+    gap: 1rem;
+    bottom: calc(100% - 3rem - 20px);
 }
 
-#canvas-box:has(>#help[data-help="1"]) #aid,
-#canvas-box:has(>#help[data-help="1"]) .msg,
-#canvas-box:has(>#help[data-help="1"])::before {
+#canvas-box:has(.button-box>#help[data-help="1"]) .msg,
+#canvas-box:has(.button-box>#help[data-help="1"])::before {
     display: block;
 }
 
-#canvas-box .button {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+#canvas-box .button-box .breadcrumbs {
+    margin-right: auto;
+    font-size: 2rem;
+    line-height: 2rem;
+    color: white;
+    cursor: pointer;
+}
+
+#canvas-box .button-box .button {
     width: 2.5rem;
     height: 2.5rem;
-    z-index: 99;
 }
 
-#canvas-box #center {
-    top: 7.5%;
-    left: 95%;
+#canvas-box .button-box svg {
+    width: 100%;
+    height: 100%;
 }
 
-#canvas-box #help {
-    left: 91%;
-    top: 7.5%;
-    width: 2.75rem;
-    height: 2.75rem;
+#canvas-box .info {
+    position: absolute;
+    display: none;
+    width: fit-content;
+    height: fit-content;
+    background-color: white;
 }
