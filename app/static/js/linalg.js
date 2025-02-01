@@ -1,9 +1,6 @@
 export class vec3 extends Float32Array {
-    constructor(from) {
-        if (!from) {
-            from = [0, 0, 0];
-        }
-        super(from);
+    constructor(x, y, z) {
+        super([x, y, z]);
     }
     set x(x) {
         this[0] = x;
@@ -24,21 +21,17 @@ export class vec3 extends Float32Array {
         return this[2];
     }
     sub(other) {
-        return new vec3([this[0] - other[0], this[1] - other[1], this[2] - other[2]]);
+        return new vec3(this[0] - other[0], this[1] - other[1], this[2] - other[2]);
     }
     normalize() {
         let l = this[0] * this[0] + this[1] * this[1] + this[2] * this[2];
         if (l > 0) {
             l = 1 / Math.sqrt(l);
         }
-        return new vec3([this[0] * l, this[1] * l, this[2] * l]);
+        return new vec3(this[0] * l, this[1] * l, this[2] * l);
     }
     cross(other) {
-        return new vec3([
-            this[1] * other[2] - this[2] * other[1],
-            this[2] * other[0] - this[0] * other[2],
-            this[0] * other[1] - this[1] * other[0],
-        ]);
+        return new vec3(this[1] * other[2] - this[2] * other[1], this[2] * other[0] - this[0] * other[2], this[0] * other[1] - this[1] * other[0]);
     }
 }
 export class mat4 extends Float32Array {
@@ -62,8 +55,8 @@ export class mat4 extends Float32Array {
         const s = Math.sin(theta);
         return new mat4([
             1, 0, 0, 0,
-            0, c, s, 0,
-            0, -s, c, 0,
+            0, c, -s, 0,
+            0, s, c, 0,
             0, 0, 0, 1,
         ]);
     }
@@ -71,9 +64,9 @@ export class mat4 extends Float32Array {
         const c = Math.cos(theta);
         const s = Math.sin(theta);
         return new mat4([
-            c, 0, -s, 0,
+            c, 0, s, 0,
             0, 1, 0, 0,
-            s, 0, c, 0,
+            -s, 0, c, 0,
             0, 0, 0, 1,
         ]);
     }
@@ -81,8 +74,8 @@ export class mat4 extends Float32Array {
         const c = Math.cos(theta);
         const s = Math.sin(theta);
         return new mat4([
-            c, s, 0, 0,
-            -s, c, 0, 0,
+            c, -s, 0, 0,
+            s, c, 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1,
         ]);
@@ -139,46 +132,74 @@ export class mat4 extends Float32Array {
     rotateZ(theta) {
         return this.mul(mat4.matrz(theta));
     }
+    rotate(thetaX, thataY, thetaZ) {
+        /**
+         * https://en.wikipedia.org/wiki/Rotation_matrix
+         *
+         * The rotation matrix is the product of the above mat4.matrx, mat4.matry, and mat4.matrz,
+         * and is given by:
+         *
+         * a = thetaX, b = thetaY, c = thetaZ
+         * R = [
+         *  cos(b)cos(c), sin(a)sin(b)cos(c) - cos(a)sin(c), cos(a)sin(b)cos(c) + sin(a)sin(c),
+         *  cos(b)sin(c), sin(a)sin(b)sin(c) + cos(a)cos(c), cos(a)sin(b)sin(c) - sin(a)cos(c),
+         *  -sin(b), sin(a)cos(b), cos(a)cos(b)
+         * ]
+         */
+        const cx = Math.cos(thetaX), cy = Math.cos(thataY), cz = Math.cos(thetaZ);
+        const sx = Math.sin(thetaX), sy = Math.sin(thataY), sz = Math.sin(thetaZ);
+        return this.mul(new mat4([
+            cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz, 0,
+            cy * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz, 0,
+            -sy, sx * cy, cx * cy, 0,
+            0, 0, 0, 1
+        ]));
+    }
     invert() {
-        const out = new mat4();
-        let a00 = this[0], a01 = this[1], a02 = this[2], a03 = this[3];
-        let a10 = this[4], a11 = this[5], a12 = this[6], a13 = this[7];
-        let a20 = this[8], a21 = this[9], a22 = this[10], a23 = this[11];
-        let a30 = this[12], a31 = this[13], a32 = this[14], a33 = this[15];
-        let b00 = a00 * a11 - a01 * a10;
-        let b01 = a00 * a12 - a02 * a10;
-        let b02 = a00 * a13 - a03 * a10;
-        let b03 = a01 * a12 - a02 * a11;
-        let b04 = a01 * a13 - a03 * a11;
-        let b05 = a02 * a13 - a03 * a12;
-        let b06 = a20 * a31 - a21 * a30;
-        let b07 = a20 * a32 - a22 * a30;
-        let b08 = a20 * a33 - a23 * a30;
-        let b09 = a21 * a32 - a22 * a31;
-        let b10 = a21 * a33 - a23 * a31;
-        let b11 = a22 * a33 - a23 * a32;
-        // Calculate the determinant
-        let det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
-        if (!det) {
-            return null;
+        let det = 1.0;
+        for (let p = 0; p < this.k; p++) {
+            const pivot = this[p * this.k + p];
+            if (Math.abs(pivot) < 0.000001) {
+                // return this;
+            }
+            det *= pivot;
+            for (let i = 0; i < this.k; i++) {
+                this[i * this.k + p] /= -pivot;
+            }
+            for (let i = 0; i < this.k; i++) {
+                if (i == p) {
+                    continue;
+                }
+                for (let j = 0; j < this.k; j++) {
+                    if (j == p) {
+                        continue;
+                    }
+                    this[i * this.k + j] += this[i * this.k + p] * this[p * this.k + j];
+                }
+            }
+            for (let j = 0; j < this.k; j++) {
+                this[p * this.k + j] /= pivot;
+            }
+            this[p * this.k + p] = 1 / pivot;
         }
-        det = 1.0 / det;
-        out[0] = (a11 * b11 - a12 * b10 + a13 * b09) * det;
-        out[1] = (a02 * b10 - a01 * b11 - a03 * b09) * det;
-        out[2] = (a31 * b05 - a32 * b04 + a33 * b03) * det;
-        out[3] = (a22 * b04 - a21 * b05 - a23 * b03) * det;
-        out[4] = (a12 * b08 - a10 * b11 - a13 * b07) * det;
-        out[5] = (a00 * b11 - a02 * b08 + a03 * b07) * det;
-        out[6] = (a32 * b02 - a30 * b05 - a33 * b01) * det;
-        out[7] = (a20 * b05 - a22 * b02 + a23 * b01) * det;
-        out[8] = (a10 * b10 - a11 * b08 + a13 * b06) * det;
-        out[9] = (a01 * b08 - a00 * b10 - a03 * b06) * det;
-        out[10] = (a30 * b04 - a31 * b02 + a33 * b00) * det;
-        out[11] = (a21 * b02 - a20 * b04 - a23 * b00) * det;
-        out[12] = (a11 * b07 - a10 * b09 - a12 * b06) * det;
-        out[13] = (a00 * b09 - a01 * b07 + a02 * b06) * det;
-        out[14] = (a31 * b01 - a30 * b03 - a32 * b00) * det;
-        out[15] = (a20 * b03 - a21 * b01 + a22 * b00) * det;
-        return out;
+        console.log(det);
+        return this;
     }
 }
+function test() {
+    const m = new mat4([
+        4, 7, 2, 3,
+        0, 5, 9, 1,
+        3, 6, 8, 2,
+        1, 2, 3, 4,
+    ]);
+    console.log(m.invert());
+    const n = new mat4([
+        4, 7, 2, 3,
+        0, 5, 9, 1,
+        3, 6, 8, 2,
+        1, 2, 3, 4,
+    ]);
+    console.log(n.mul(m));
+}
+// test();
