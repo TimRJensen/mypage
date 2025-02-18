@@ -11,6 +11,7 @@
 :root {
     font-family: "Roboto", sans-serif;
     font-size: 18px;
+    /* overflow: hidden; */
 }
 
 button {
@@ -32,6 +33,7 @@ button svg {
     flex-flow: column nowrap;
     align-items: center;
     overflow: hidden;
+
 }
 
 #msg-box {
@@ -150,9 +152,10 @@ button svg {
 }
 
 #canvas-box #canvas {
-    width: 100%;
-    min-height: 100vh;
+    width: 100vw;
+    height: 100vh;
     background-color: orange;
+    touch-action: none;
 }
 
 #canvas-box::before {

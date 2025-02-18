@@ -34,6 +34,10 @@ export class vec3 extends Float32Array {
         return new vec3(this[0]*l, this[1]*l, this[2]*l);
     }
 
+    dot (other: vec3) {
+        return this[0]*other[0] + this[1]*other[1] + this[2]*other[2];
+    }
+
     cross(other: vec3) {
         return new vec3(
             this[1]*other[2] - this[2]*other[1], 
@@ -46,7 +50,7 @@ export class vec3 extends Float32Array {
 export class mat4 extends Float32Array {
     private k = 4;
 
-    constructor(from?: Iterable<number>) {
+    constructor(from?: ArrayLike<number>) {
         if (!from) {
             from = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
         }
@@ -104,23 +108,35 @@ export class mat4 extends Float32Array {
         ]);
     }
 
+    static ortho(left: number, right: number, bottom: number, top: number, near: number, far: number) {
+        const lr = 1/(left - right);
+        const bt = 1/(bottom - top);
+        const nf = 1/(near - far);
+        return new mat4([
+            -2*lr, 0, 0, 0,
+            0, -2*bt, 0, 0,
+            0, 0, 2*nf, 0,
+            (left + right)*lr, (top + bottom)*bt, (near + far)*nf, 1
+        ]);
+    }
+
     static lookAt(eye: vec3, target: vec3, up: vec3) {
         if (
-            Math.abs(eye[0] - target[0]) < 0.000001 && 
-            Math.abs(eye[1] - target[1]) < 0.000001 &&
-            Math.abs(eye[2] - target[2]) < 0.000001
+            Math.abs(eye[0] - target[0]) < Number.EPSILON && 
+            Math.abs(eye[1] - target[1]) < Number.EPSILON &&
+            Math.abs(eye[2] - target[2]) < Number.EPSILON
         ) {
             return new mat4();
         }
 
         const z = eye.sub(target).normalize();
-        const x = up.cross(z).normalize();
-        const y = z.cross(x).normalize();
+        const x = z.cross(up).normalize();
+        const y = x.cross(z).normalize();
 
         return new mat4([
-            ...x, 0,
-            ...y, 0,
-            ...z, 0,
+            x[0], y[0], z[0], 0,
+            x[1], y[1], z[1], 0,
+            x[2], y[2], z[2], 0,
             -(x[0]*eye[0] + x[1]*eye[1] + x[2]*eye[2]),
             -(y[0]*eye[0] + y[1]*eye[1] + y[2]*eye[2]),
             -(z[0]*eye[0] + z[1]*eye[1] + z[2]*eye[2]),
@@ -134,7 +150,9 @@ export class mat4 extends Float32Array {
         const r = new Float32Array(this.k*this.k);
         for (let i = 0; i < this.k; i++) {
             for (let j = 0; j < this.k; j++) {
-                r[j*4+i] = a[i]*b[j*4] + a[i+4]*b[j*4+1] + a[i+8]*b[j*4+2] + a[i+12]*b[j*4+3];
+                for (let k = 0; k < 4; k++) {
+                    r[i + j*4] += a[i + k*4]*b[k + j*4]; 
+                }
             }
         }
         return new mat4(r);
@@ -180,6 +198,28 @@ export class mat4 extends Float32Array {
         ]));
     }
 
+    rotateAxis(axis: vec3, theta: number) {
+        const x = axis[0], y = axis[1], z = axis[2];
+        const c = Math.cos(theta);
+        const s = Math.sin(theta);
+        const t = 1 - c;
+        return this.mul(new mat4([
+            t*x*x + c, t*x*y - s*z, t*x*z + s*y, 0,
+            t*x*y + s*z, t*y*y + c, t*y*z - s*x, 0,
+            t*x*z - s*y, t*y*z + s*x, t*z*z + c, 0,
+            0, 0, 0, 1
+        ]));
+    }
+
+    scale(x: number, y: number, z: number) {
+        return this.mul(new mat4([
+            x, 0, 0, 0,
+            0, y, 0, 0,
+            0, 0, z, 0,
+            0, 0, 0, 1,
+        ]));
+    }
+
     invert() {
         let det = 1.0;
         for (let p = 0; p < this.k; p++) {
@@ -214,21 +254,3 @@ export class mat4 extends Float32Array {
         return this;
     }
 }
-
-function test() {
-    const m = new mat4([
-        4, 7, 2, 3,
-        0, 5, 9, 1,
-        3, 6, 8, 2,
-        1, 2, 3, 4,
-    ]);
-    console.log(m.invert());
-    const n = new mat4([
-        4, 7, 2, 3,
-        0, 5, 9, 1,
-        3, 6, 8, 2,
-        1, 2, 3, 4,
-    ])
-    console.log(n.mul(m));
-}
-// test();
