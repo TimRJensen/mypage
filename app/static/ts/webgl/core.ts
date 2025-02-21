@@ -8,6 +8,8 @@ import {
     DrawInfo,
     setUniform,
 } from "./common.js";
+import quadvs from "./shaders/vertex-quad.js";
+import quadfs from "./shaders/fragment-quad.js";
 
 /**
  * Utility function to create a WebGL2 shader.
@@ -94,27 +96,42 @@ export function initializeUniforms(gl: WebGL2RenderingContext, program: WebGLPro
 /**
  * Utility function to create a static buffer from an ArrayBuffer.
  */
-export function createStaticBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, method: number = gl.STATIC_DRAW): [boolean, WebGLBuffer|null] {
+export function createStaticBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, target?: GLenum , method?: number): [boolean, WebGLBuffer|null] {
     const buffer = gl.createBuffer();
     if (!buffer) {
         return [false, null];
     }
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data, method);
+    gl.bindBuffer(target ?? gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(target ?? gl.ARRAY_BUFFER, data, method ?? gl.STATIC_DRAW);
+    return [true, buffer];
+}
+
+/**
+ * Utility function to create a static buffer with a fixed length.
+ */
+export function createStaticBufferN(gl: WebGL2RenderingContext, n: number, target?: GLenum, method?: number): [boolean, WebGLBuffer|null] {
+    const buffer = gl.createBuffer();
+    if (!buffer) {
+        return [false, null];
+    }
+
+    gl.bindBuffer(target ?? gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(target ?? gl.ARRAY_BUFFER, n, method ?? gl.STATIC_DRAW);
     return [true, buffer];
 }
 
 /**
  * Utility function to create a Vertex Array Object.
  */
-export function createVAO(gl: WebGL2RenderingContext, program: WebGLProgram, attrs: Map<string, AttributeObject>, buff: WebGLBuffer): [boolean, WebGLVertexArrayObject|null] {
+export function createVAO(gl: WebGL2RenderingContext, program: WebGLProgram, attrs: Map<string, AttributeObject>, vbuff: WebGLBuffer, ibuff: WebGLBuffer|null = null): [boolean, WebGLVertexArrayObject|null] {
     const vao = gl.createVertexArray();
     if (!vao) {
         return [false, null];
     }
     gl.bindVertexArray(vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buff);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbuff);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibuff!);
 
     let offset = 0;
     for (const [name, {type, len, stride, size}] of attrs.entries()) {
@@ -312,28 +329,6 @@ export interface PluginLike {
     after(gl: WebGL2RenderingContext, fbo: FrameBufferObject): void;
 }
 
-// TODO: Move this to a separate file.
-const quadvs = `#version 300 es
-    in vec4 a_position;
-    in vec2 a_texcoord;
-    out vec2 v_texcoord;
-
-    void main() {
-        gl_Position = a_position;
-        v_texcoord = a_texcoord;
-    }
-`;
-const quadfs = `#version 300 es
-    precision mediump float;
-    in vec2 v_texcoord;
-    out vec4 f_color;
-
-    uniform sampler2D tex;
-
-    void main() {
-        f_color = texture(tex, v_texcoord);
-    }
-`;
 const vertices = new Float32Array([
     // xy   uv     
     -1, 1,  0,1,
@@ -403,7 +398,7 @@ export class Program<T extends Drawable<T>> {
             return;
         }
 
-        const [ok_vao, vao] = createVAO(gl, quad!, quad_attribs, buff!);
+        const [ok_vao, vao] = createVAO(gl, quad!, quad_attribs, buff!, null!);
         if (!ok_vao) {
             return;
         }
@@ -425,13 +420,8 @@ export class Program<T extends Drawable<T>> {
 
         // Initialize object VAOs
         for (const shape of shapes) {
-            shape.buffer.then((array_buff) => {
-                let vao: WebGLVertexArrayObject|null;
-                let [ok, buff] = createStaticBuffer(gl, array_buff);
-                if (!ok) {
-                    return;
-                }
-                [ok, vao] = createVAO(gl, main!, main_attribs, buff!);
+            shape.buffer.then(([vbuff, ibuff]) => {
+                let [ok, vao] = createVAO(gl, main!, main_attribs, vbuff, ibuff);
                 if (!ok) {
                     return;
                 }
@@ -458,7 +448,6 @@ export class Program<T extends Drawable<T>> {
         this.programOptions.color[1] /= 255;
         this.programOptions.color[2] /= 255;
         this.fbo = main_fbo!;
-
     }
 
     use() {
@@ -541,9 +530,12 @@ export class Program<T extends Drawable<T>> {
             }
             this.handlers.get(e.type)!(e);
         }
+        if (this.handlers.has("done")) {
+            this.handlers.get("done")!(new PluginEvent("done", {shape: null!}));
+        }
         this.events = [];
 
-        requestAnimationFrame(this.draw.bind(this));
+       requestAnimationFrame(this.draw.bind(this));
     }
 
     render(options: DrawInfo<T> = {}) {
@@ -554,7 +546,9 @@ export class Program<T extends Drawable<T>> {
 
         // @ts-ignore
         this.drawInfo = options;
-        requestAnimationFrame(this.draw.bind(this));
+        Promise.all(this.shapes.map((shape) => shape.buffer)).then(() => {
+            requestAnimationFrame(this.draw.bind(this));
+        });
     }
 
     fire (e: PluginEvent<T>) {

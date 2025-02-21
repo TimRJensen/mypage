@@ -29,8 +29,7 @@ export type DrawInfo<T> = {
 }
 
 export interface Drawable <T> extends Iterable<T> {
-    readonly buffer: Promise<ArrayBuffer>;
-    readonly vertices: ArrayBuffer;
+    readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
     draw(gl: WebGLRenderingContext, map: Map<string, UniformObject>, drawObject: DrawInfo<T>, offset?: number): void;
 }
 

@@ -19,11 +19,15 @@ export declare function initializeUniforms(gl: WebGL2RenderingContext, program: 
 /**
  * Utility function to create a static buffer from an ArrayBuffer.
  */
-export declare function createStaticBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, method?: number): [boolean, WebGLBuffer | null];
+export declare function createStaticBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, target?: GLenum, method?: number): [boolean, WebGLBuffer | null];
+/**
+ * Utility function to create a static buffer with a fixed length.
+ */
+export declare function createStaticBufferN(gl: WebGL2RenderingContext, n: number, target?: GLenum, method?: number): [boolean, WebGLBuffer | null];
 /**
  * Utility function to create a Vertex Array Object.
  */
-export declare function createVAO(gl: WebGL2RenderingContext, program: WebGLProgram, attrs: Map<string, AttributeObject>, buff: WebGLBuffer): [boolean, WebGLVertexArrayObject | null];
+export declare function createVAO(gl: WebGL2RenderingContext, program: WebGLProgram, attrs: Map<string, AttributeObject>, vbuff: WebGLBuffer, ibuff?: WebGLBuffer | null): [boolean, WebGLVertexArrayObject | null];
 /**
  * Utility function to create a texture array buffer from an HTMLImageElement.
  */

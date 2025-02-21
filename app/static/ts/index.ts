@@ -2,7 +2,9 @@ import {mat4, vec3} from "./linalg.js";
 import {Program} from "./webgl/core.js";
 import {PointerPlugin, PointerPluginEvent} from "./webgl/plugins/pointer.js";
 import {BloomPlugin} from "./webgl/plugins/bloom.js";
-import {Grid, /*Composite, AtlasPlane,*/ Node,  Edge/*, Icon*/} from "./webgl/geometry.js";
+import {Grid, Composite, Node, Edge} from "./webgl/geometry.js";
+import vs from "./webgl/shaders/vertex-main.js";
+import fs from "./webgl/shaders/fragment-main.js";
 
 /**
  * Handle transition
@@ -21,16 +23,29 @@ import {Grid, /*Composite, AtlasPlane,*/ Node,  Edge/*, Icon*/} from "./webgl/ge
  */
 (function () {
     const canvas = document.querySelector<HTMLCanvasElement>("#canvas-box #canvas")!;
+    const gl = canvas.getContext("webgl2");
+    if (!gl) {
+        throw new Error("WebGL2 is not supported");
+    }
     // Shapes
     const shapes = [
         // Grid
-        new Grid(2, 1, 2/15, {id: 0, display: "fixed", color: [160, 117, 206]}),
+        new Grid(gl, 2, 1, 26, {id: 0, display: "fixed", color: [160, 117, 206]}),
         // Root
-        new Node({id: 1, pos: [0.0, 0.04, -0.84]}),
-        new Edge([-0.315, 0.04, -0.63], [0.0, 0.04, -0.84], {pos: [0.0, 0.0925, -0.84]}),
-        new Node({id: 2, pos: [-0.315, 0.04, -0.63]}),
-        new Edge([0.315, 0.04, -0.63], [0.0, 0.04, -0.84], {pos: [0.0, 0.0925, -0.84]}),
-        new Node({id: 3, pos: [0.315, 0.04, -0.63]}),
+        new Node(gl, {id: 1, pos: [0.06875, 0.06, -0.82625]}),
+        new Composite(gl, {id: 2, shapes: [
+            new Node(gl, {pos: [-0.3125, 0.06, -0.575]}),
+            new Edge(gl, [-0.3125, 0.06, -0.575], [0.06875, 0.06, -0.82625]),
+        ]}),
+        new Composite(gl, {id: 3, shapes: [
+            new Node(gl, {pos: [0.4375, 0.06, -0.575]}),
+            new Edge(gl, [0.4375, 0.06, -0.575], [0.06875, 0.06, -0.82625]),
+        ]}),
+        new Composite(gl, {id: 4, shapes: [
+            new Node(gl, {pos: [0.0, 0.06, -0.42]}),
+            new Edge(gl, [0.0, 0.06, -0.42], [0.06875, 0.06, -0.82625]),
+        ]}),
+
 
         // Personal skills
         // new Composite({id: 2, x: -0.315, z: -0.63, shapes: [
@@ -134,74 +149,6 @@ import {Grid, /*Composite, AtlasPlane,*/ Node,  Edge/*, Icon*/} from "./webgl/ge
         "frontend",
         "all purpose",
     ];
-        
-    // Shaders
-    const vs = `#version 300 es
-        precision highp float;
-        precision mediump int;
-
-        layout(location=0) in vec3 a_position;
-        layout(location=1) in vec2 a_uv;
-        layout(location=2) in vec3 a_normal; // normal || texcoord
-
-        out vec3 v_position;
-        out vec2 v_uv;
-        out vec3 v_normal;
-
-        uniform int u_type;
-        uniform mat4 u_vpm;
-        uniform mat4 u_model;
-
-        void main() {
-            gl_Position = u_vpm*u_model*vec4(a_position, 1.0);
-            v_position = gl_Position.xyz;
-            v_uv = a_uv;
-            v_normal = a_normal;
-        }
-    `;
-    const fs = `#version 300 es
-        precision highp float;
-        precision mediump int;
-        precision mediump sampler2DArray;
-
-        in vec3 v_position;
-        in vec2 v_uv;
-        in vec3 v_normal;
-
-        layout(location=0) out vec4 f_color;
-        layout(location=1) out vec4 f_threshold;
-        layout(location=2) out int f_id;
-
-        uniform int u_type;
-        uniform int u_id;
-        uniform int u_picked[6];
-        uniform vec3 u_color;
-        uniform vec3 u_pick_color;
-
-        void main() {
-            vec3 color = u_color/255.0;
-            vec3 threshold = vec3(0.0, 0.0, 0.0);
-
-            if ((u_type&0xF) == 0x4) {
-                f_color = vec4(color, 0.2);
-                f_threshold = vec4(threshold, 1.0);
-                f_id = 0;
-                return;
-            }
-        
-            for (int i = 0; i < 6; i++) {
-                if (u_id == u_picked[i]) {
-                    color = u_pick_color.rgb/255.0;
-                    threshold = color;
-                    break;
-                }
-            }
-
-            f_color = vec4(color, 1.0);
-            f_threshold = vec4(threshold, 1.0);
-            f_id = u_id;
-        }
-    `;
     
     // Viewprojection matrix
     // https://webgl2fundamentals.org/webgl/lessons/webgl-3d-perspective.html
@@ -233,11 +180,12 @@ import {Grid, /*Composite, AtlasPlane,*/ Node,  Edge/*, Icon*/} from "./webgl/ge
 
     main.render({
         u_vpm: vpm,
-        u_light_position: new vec3(0.2, 1, -1),
+        u_light_dir: new vec3(0.6, 0.6, 2.0).normalize(),
         u_picked: new Int32Array([-1, -1, -1, -1, -1, -1]),
         u_type: (shape) => shape.type,
         u_id: (shape) => shape.id,
         u_model: (shape) => shape.world,
+        u_inverse_transpose: (shape) => shape.world.inverse().transpose(),
         u_color: (shape) => shape.color,
         u_pick_color: (shape) => shape.pick_color,
     });

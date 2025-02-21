@@ -12,64 +12,11 @@ import {
     createStaticBuffer,
     createVAO,
 } from "../core.js";
-import { setUniform, UniformObject } from "../common.js";
+import {setUniform, UniformObject} from "../common.js";
+import vs from "../shaders/vertex-quad.js";
+import blurfs from "../shaders/fragment-blur.js";
+import blendfs from "../shaders/fragment-blend.js";
 
-// TODO: Move this to a separate file.
-const vs = `#version 300 es
-    in vec4 a_position;
-    in vec2 a_texcoord;
-    out vec2 v_texcoord;
-
-    void main() {
-        v_texcoord = a_texcoord;
-        gl_Position = a_position;
-    }
-`;
-const blur_fs = `#version 300 es
-    precision highp float;
-
-    in vec2 v_texcoord;
-    out vec4 f_color;
-    
-    uniform sampler2D u_blur;
-    uniform int u_mode; // 0 == horizontal, 1 == vertical
-
-    const float weight[5] = float[] (0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162);
-
-    void main() {
-        vec2 texel = 1.0/vec2(textureSize(u_blur, 1));
-        vec3 result = texture(u_blur, v_texcoord).rgb*weight[0];
-
-        if (u_mode == 0) {
-            for (int i = 1; i < 5; ++i) {
-                result += texture(u_blur, v_texcoord + vec2(texel.x*float(i), 0.0)).rgb*weight[i];
-                result += texture(u_blur, v_texcoord - vec2(texel.x*float(i), 0.0)).rgb*weight[i];
-            }
-        } else {
-            for (int i = 1; i < 5; ++i) {
-                result += texture(u_blur, v_texcoord + vec2(0.0, texel.y*float(i))).rgb*weight[i];
-                result += texture(u_blur, v_texcoord - vec2(00., texel.y*float(i))).rgb*weight[i];
-            }
-        }
-
-        f_color = vec4(result, 1.0);
-    }
-`;
-const blend_fs = `#version 300 es
-    precision mediump float;
-
-    in vec2 v_texcoord;
-    out vec4 f_color;
-
-    uniform sampler2D u_scene;
-    uniform sampler2D u_blur;
-
-    void main() {
-        vec3 scene = texture(u_scene, v_texcoord).rgb;
-        vec3 blur = texture(u_blur, v_texcoord).rgb;
-        f_color = vec4(scene + blur*1.5, 1.0);
-    }
-`;
 const vertices = new Float32Array([
     // xy   uv     
     -1, 1,  0,1,
@@ -102,7 +49,7 @@ export class BloomPlugin implements PluginLike {
         attachTextureBuffer(gl, program.fbo, program.fbo.width, program.fbo.height, gl.RGBA8, n);
 
         // Create the bloom programs
-        const shaders = [blur_fs, blend_fs]
+        const shaders = [blurfs, blendfs]
         const attrib_object = {
             a_position: {type: gl.FLOAT, len: 2, stride: 16, size: 4},
             a_texcoord: {type: gl.FLOAT, len: 2, stride: 16, size: 4},

@@ -29,5 +29,6 @@ export declare class mat4 extends Float32Array {
     rotate(thetaX: number, thataY: number, thetaZ: number): mat4;
     rotateAxis(axis: vec3, theta: number): mat4;
     scale(x: number, y: number, z: number): mat4;
-    invert(): this;
+    inverse(): mat4;
+    transpose(): mat4;
 }

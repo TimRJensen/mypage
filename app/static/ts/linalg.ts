@@ -220,37 +220,78 @@ export class mat4 extends Float32Array {
         ]));
     }
 
-    invert() {
-        let det = 1.0;
-        for (let p = 0; p < this.k; p++) {
-            const pivot = this[p*this.k + p];
-            if (Math.abs(pivot) < 0.000001) {
-                // return this;
-            }
-
-            det *= pivot;
-            for (let i = 0; i < this.k; i++) {
-                this[i*this.k + p] /= -pivot;
-            }
-            for (let i = 0; i < this.k; i++) {
-                if (i == p) {
-                    continue;
-                }
-
-                for (let j = 0; j < this.k; j++) {
-                    if (j == p) {
-                        continue;
-                    }
-                    this[i*this.k + j] += this[i*this.k + p]*this[p*this.k + j];
-                }
-            }
-            for (let j = 0; j < this.k; j++) {
-                this[p*this.k + j] /= pivot;
-            }
-
-            this[p*this.k + p] = 1/pivot;
+    inverse() {
+        /**
+         * https://en.wikipedia.org/wiki/Invertible_matrix#Inversion_of_3_%C3%97_3_matrices
+         * 
+         * By generalizing the inversion to a 4x4 matrix, one can realize that if you follow
+         * the adjugate matrix method, in the first iteration you'll have 3x3 matrices to invert.
+         * One can then apply the rule of Sarrus to find the determinant of the 3x3 matrix, and
+         * construct the cofactor matrix ad hoc. I.e., removing 0,0:
+         * 0 0 0 0 -> transpose -> 0 0 0 0
+         * 0 A B C                 0 A D G   
+         * 0 D E F                 0 B E H
+         * 0 G H I                 0 C F I
+         */
+        const m = this;
+    
+        // Cofactirs
+        const detA =  
+            m[5]*(m[10]*m[15] - m[11]*m[14])  
+            - m[6]*(m[9]*m[15] - m[11]*m[13])  
+            + m[7]*(m[9]*m[14] - m[10]*m[13]);
+        const detB = 
+            -m[4]*(m[10]*m[15] - m[11]*m[14]) 
+            + m[6]*(m[8]*m[15] - m[11]*m[12])
+            - m[7]*(m[8]*m[14] - m[10]*m[12]);
+        const detC =  
+            m[4]*(m[9]*m[15] - m[11]*m[13]) 
+            - m[5]*(m[8]*m[15] - m[11]*m[12]) 
+            + m[7]*(m[8]*m[13] - m[9]*m[12]);
+        const detD = 
+            -m[4]*(m[9]*m[14] - m[10]*m[13]) 
+            + m[5]*(m[8]*m[14] - m[10]*m[12]) 
+            - m[6]*(m[8]*m[13] - m[9]*m[12]);
+    
+        // Determinant
+        const det = m[0]*detA + m[1]*detB + m[2]*detC + m[3]*detD;
+    
+        if (Math.abs(det) < Number.EPSILON) {
+            return new mat4();
         }
-        console.log(det);
-        return this;
+    
+        // Inverse is adjugate/determinant
+        const inv_det = 1.0 / det;
+    
+        return new mat4([
+            detA*inv_det,
+            (-m[1]*(m[10]*m[15] - m[11]*m[14]) + m[2]*(m[9]*m[15] - m[11]*m[13]) - m[3]*(m[9]*m[14] - m[10]*m[13]))*inv_det,
+            (m[1]*(m[6]*m[15] - m[7]*m[14]) - m[2]*(m[5]*m[15] - m[7]*m[13]) + m[3]*(m[5]*m[14] - m[6]*m[13]))*inv_det,
+            (-m[1]*(m[6]*m[11] - m[7]*m[10]) + m[2]*(m[5]*m[11] - m[7]*m[9]) - m[3]*(m[5]*m[10] - m[6]*m[9]))*inv_det,
+    
+            detB*inv_det,
+            (m[0]*(m[10]*m[15] - m[11]*m[14]) - m[2]*(m[8]*m[15] - m[11]*m[12]) + m[3]*(m[8]*m[14] - m[10]*m[12]))*inv_det,
+            (-m[0]*(m[6]*m[15] - m[7]*m[14]) + m[2]*(m[4]*m[15] - m[7]*m[12]) - m[3]*(m[4]*m[14] - m[6]*m[12]))*inv_det,
+            (m[0]*(m[6]*m[11] - m[7]*m[10]) - m[2]*(m[4]*m[11] - m[7]*m[8]) + m[3]*(m[4]*m[10] - m[6]*m[8]))*inv_det,
+    
+            detC*inv_det,
+            (-m[0]*(m[9]*m[15] - m[11]*m[13]) + m[1]*(m[8]*m[15] - m[11]*m[12]) - m[3]*(m[8]*m[13] - m[9]*m[12]))*inv_det,
+            (m[0]*(m[5]*m[15] - m[7]*m[13]) - m[1]*(m[4]*m[15] - m[7]*m[12]) + m[3]*(m[4]*m[13] - m[5]*m[12]))*inv_det,
+            (-m[0]*(m[5]*m[11] - m[7]*m[9]) + m[1]*(m[4]*m[11] - m[7]*m[8]) - m[3]*(m[4]*m[9] - m[5]*m[8]))* inv_det,
+    
+            detD*inv_det,
+            (m[0]*(m[9]*m[14] - m[10]*m[13]) - m[1]*(m[8]*m[14] - m[10]*m[12]) + m[2]*(m[8]*m[13] - m[9]*m[12]))*inv_det,
+            (-m[0]*(m[5]*m[14] - m[6]*m[13]) + m[1]*(m[4]*m[14] - m[6]*m[12]) - m[2]*(m[4]*m[13] - m[5]*m[12]))*inv_det,
+            (m[0]*(m[5]*m[10] - m[6]*m[9]) - m[1]*(m[4]*m[10] - m[6]*m[8]) + m[2]*(m[4]*m[9] - m[5]*m[8]))*inv_det,
+        ]);
+    }
+
+    transpose() {
+        return new mat4([
+            this[0], this[4], this[8], this[12],
+            this[1], this[5], this[9], this[13],
+            this[2], this[6], this[10], this[14],
+            this[3], this[7], this[11], this[15]
+        ]);
     }
 }

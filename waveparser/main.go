@@ -17,12 +17,15 @@ var (
 	fields = map[string]int{"v": 0, "vt": 1, "vn": 2}
 )
 
-func parser(file string) []float32 {
+func parser(file string) ([]float32, []int32) {
 	f, _ := os.Open(file)
 	defer f.Close()
 
-	data := make([][]float32, 3)
-	result := make([]float32, 0)
+	parsed := make([][]float32, 3)
+	cache := make(map[string]int32)
+	vertices := make([]float32, 0)
+	indices := make([]int32, 0)
+
 	reader := bufio.NewScanner(f)
 	reader.Split(bufio.ScanLines)
 	for reader.Scan() {
@@ -32,29 +35,37 @@ func parser(file string) []float32 {
 			chunks := strings.Split(line, " ")
 			for _, chunck := range chunks[1:] {
 				v, _ := strconv.ParseFloat(chunck, 32)
-				data[fields[chunks[0]]] = append(data[fields[chunks[0]]], float32(v))
+				parsed[fields[chunks[0]]] = append(parsed[fields[chunks[0]]], float32(v))
 			}
 		case "f":
 			chunks := strings.Split(line, " ")
 			for _, chunck := range chunks[1:] {
-				indices := strings.Split(chunck, "/")
-				for i, index := range indices {
-					k, _ := strconv.ParseInt(index, 10, 32)
+				chunks := strings.Split(chunck, "/")
+
+				if _, ok := cache[chunck]; ok {
+					indices = append(indices, cache[chunck])
+					continue
+				}
+				cache[chunck] = int32(len(cache))
+				indices = append(indices, cache[chunck])
+
+				for i, idx := range chunks {
+					k, _ := strconv.ParseInt(idx, 10, 32)
 					switch i {
 					case 0, 2:
-						result = append(result, data[i][(k-1)*3])
-						result = append(result, data[i][(k-1)*3+1])
-						result = append(result, data[i][(k-1)*3+2])
+						vertices = append(vertices, parsed[i][(k-1)*3])
+						vertices = append(vertices, parsed[i][(k-1)*3+1])
+						vertices = append(vertices, parsed[i][(k-1)*3+2])
 					case 1:
-						result = append(result, data[i][(k-1)*2])
-						result = append(result, data[i][(k-1)*2+1])
+						vertices = append(vertices, parsed[i][(k-1)*2])
+						vertices = append(vertices, parsed[i][(k-1)*2+1])
 					}
 				}
 			}
 		}
 	}
 
-	return result
+	return vertices, indices
 }
 
 func main() {
@@ -83,9 +94,11 @@ func main() {
 		panic("File does not exist")
 	}
 
-	data := parser(file)
+	vertices, indices := parser(file)
 	path, _ := filepath.Abs(path.Join(CWD, flags["-o"]))
 	out, _ := os.Create(path)
-	binary.Write(out, binary.LittleEndian, data)
+	binary.Write(out, binary.LittleEndian, int32(binary.Size(vertices)))
+	binary.Write(out, binary.LittleEndian, vertices)
+	binary.Write(out, binary.LittleEndian, indices)
 	fmt.Println(fmt.Sprintf("[LOG] Succesfully parsed \"%s\"\n[LOG] Wrote to \"%s\"", file, path))
 }

@@ -1,24 +1,25 @@
 import {mat4, vec3} from "../linalg.js";
 import {DrawInfo, setUniform, UniformObject} from "./common.js";
+import {createStaticBuffer, createStaticBufferN} from "./core.js";
 
-/**
- * Vertices reference for future me.
- *  ----------------------------------------------
- * | xyz uv nxnynz 
- *  ----------------------------------------------
- */
-const STRIDE = 32;
-
-// Default color is white.
+// Default color (white).
 const WHITE: [number, number, number] = [255, 255, 255]
+
+const OBJECT_FILES = [
+    "/static/objects/ico-sphere.bin",
+    "/static/objects/indexed-line-segment.bin",
+    "/static/objects/circle.bin",
+    "/static/objects/line-plane.bin",
+]
 
 // ShapeType is a bitfield enum.
 export enum ShapeType {
-    COLORED = 0x0,
-    LINE = ShapeType.COLORED | 0x2,
-    SHADOW = ShapeType.COLORED | 0x4,
-    TEXTURED = 0x1,
-    LOGO = ShapeType.TEXTURED | 0x1,
+    COLORED     = 0x0,
+    SPHERE      = ShapeType.COLORED | 0x2,
+    LINE        = ShapeType.COLORED | 0x4,
+    SHADOW      = ShapeType.COLORED | 0x6,
+    TEXTURED    = 0x1,
+    LOGO        = ShapeType.TEXTURED | 0x1,
 }
 
 // Alias for WebGL2RenderingContext constants.
@@ -29,143 +30,29 @@ enum DrawType {
     TRIANGLE_FAN = WebGL2RenderingContext.TRIANGLE_FAN,
 }
 
-function createVertexBuffer(data: number[]) {
-    const buffer = new ArrayBuffer(data.length*4);
-    const view = new DataView(buffer);
-
-    for (let i = 0; i < data.length; i++) {
-        view.setFloat32(i*4, data[i], true);
-    }
-
-    return buffer;
-}
-
-function vertexBufferFrom(data: Array<ArrayBuffer>, n: number) {
-    const buffer = new ArrayBuffer(n);
-    const trg = new DataView(buffer);
-
-    let k = 0;
-    for (const src of data) {
-        const view = new DataView(src);
-        const count = src.byteLength/4;
-
-        for (let i = 0; i < count; i++) {
-                trg.setFloat32(k, view.getFloat32(i*4, true), true);
-            k += 4;
-        }
-    }
-
-    return buffer;
-}
-    
 function createGrid(xmax: number, ymax: number, step: number) {
     const vertices = [];
+    step = (xmax/ymax/step)*2;
 
     for (let x = -xmax; x <= xmax; x += step) {
-        // xyz
-        vertices.push(x, 0, -ymax, 0, 0, 0, 1, 0);
-        vertices.push(x, 0, ymax, 0, 0, 0, 1, 0);
+        // xyz uv nxnynz
+        vertices.push(x, 0, -ymax, 0, 0, 0.6, 1, 1);
+        vertices.push(x, 0, ymax, 0, 0, 0.6, 1, 1);
     }
     for (let y = -ymax; y <= ymax; y += step) {
-        // xyz
-        vertices.push(-xmax, 0, y, 0, 0, 0, 1, 0);
-        vertices.push(xmax, 0, y, 0, 0, 0, 1, 0);
+        // xyz uv nxnynz
+        vertices.push(-xmax, 0, y, 0, 0, 0.6, 1, 1);
+        vertices.push(xmax, 0, y, 0, 0, 0.6, 1, 1);
     }
     
-    return vertices;
-}
-
-function createSphere(radius: number, latitudeBands: number, longitudeBands: number) {
-    const vertices: number[] = [];
-    const indices: number[] = [];
-
-    for (let lat = 0; lat <= latitudeBands; ++lat) {
-        const theta = (lat*Math.PI)/latitudeBands;
-        const sinTheta = Math.sin(theta);
-        const cosTheta = Math.cos(theta);
-
-        for (let lon = 0; lon <= longitudeBands; ++lon) {
-            const phi = (lon*2*Math.PI)/longitudeBands;
-            const sinPhi = Math.sin(phi);
-            const cosPhi = Math.cos(phi);
-
-            const x = radius*cosPhi*sinTheta;
-            const y = radius*cosTheta;
-            const z =  radius*sinPhi*sinTheta;
-            const len = Math.hypot(x, y, z);
-
-            vertices.push(
-                // xyz
-                x, y, z,
-                // normal               //padding               
-                x/len, y/len, z/len,   0,
-            );
-        }
-    }
-
-    for (let lat = 0; lat < latitudeBands; ++lat) {
-        for (let lon = 0; lon < longitudeBands; ++lon) {
-            const current = lat*(longitudeBands + 1) + lon;
-            const next = (lat + 1)*(longitudeBands + 1) + lon;
-
-            indices.push(current, next, current + 1, current + 1, next, next + 1, 6);
-        }
-    }
-
-    return indices.flatMap(index => vertices.slice(index*7, index*7 + 7));
-}
-
-function createCircle(radius: number, segments: number) {
-    const vertices: number[] = [];
-
-    for (let i = 0; i <= segments; i++) {
-        const a = 2*Math.PI/segments*i;
-        const b = 2*Math.PI/segments*(i+1);
-
-        vertices.push(
-            // xyz     
-            0, 0, 0, 0, 1, 0, 0,
-            radius*Math.cos(a), 0, radius*Math.sin(a), 0, 1, 0, 0,
-            radius*Math.cos(b), 0, radius*Math.sin(b), 0, 1, 0, 0,
-        );
-    }
-
-    return vertices;
-}
-
-function createLine(width: number, a: Array<number>, b: Array<number>) {
-    let dx = b[0] - a[0];
-    let dy = b[1] - a[1];
-    let len = Math.sqrt(dx*dx + dy*dy);
-    if (len < 0.0001) len = 1;
-    let dirX = -dx / len;
-    let dirY = dy / len;
-    let normal = [ -dirY, dirX, 0 ];
-    return [
-        // xyz
-        ...a, ...normal, width,
-        ...a, ...normal, -width,
-        ...b, ...normal, width,
-        ...b, ...normal, -width,
-    ];
-}
-
-function createTexturePlane(size: number, depth: number, ratio = 1.0) {
-    return [
-        // xyz                      uv      depth
-        -size*ratio, 0.0, -size,    0, 1,   depth, 0,
-        size*ratio, 0.0, size,      1, 0,   depth, 0,
-        -size*ratio, 0.0, size,     0, 0,   depth, 0,
-        -size*ratio, 0.0, -size,    0, 1,   depth, 0,
-        size*ratio, 0.0, -size,     1, 1,   depth, 0,
-        size*ratio, 0.0, size,      1, 0,   depth, 0,
-    ];
+    return new Float32Array(vertices).buffer;
 }
 
 type ShapeProps = {
     id?: number,
     type?: number,
     display?: "inherit" | "fixed" | "none",
+    visible?: number,
     pos?: [number, number, number],
     rotation?: [number, number, number],
     scale?: [number, number, number],
@@ -174,13 +61,11 @@ type ShapeProps = {
 }
 
 export class Shape  {
-    public readonly buffer;
-    public readonly vertices: ArrayBuffer = null!;
-    public readonly id;
-    public readonly type;
+    public readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]> = null!;
+    public readonly indices = 0;
+    public readonly vertices = 0;
     public readonly color;
     public readonly pick_color;
-    public readonly texture;
     public readonly world;
     public display: "inherit" | "fixed" | "none";
     public visible = 1;
@@ -189,23 +74,14 @@ export class Shape  {
 
     constructor(
         readonly method: GLenum,
-        vertices: number[],
-        id = 0,
-        type = ShapeType.COLORED,
+        readonly id = -1,
+        readonly type = ShapeType.COLORED,
         {
             pos = [0, 0, 0],
             color = WHITE, pick_color = WHITE,
-            texture = 0,
-        }
+            display = "inherit",
+        }: ShapeProps = {},
     ) {
-        this.id = id;
-        this.type = type;
-        this.texture = texture;
-        this.buffer = Promise.resolve(createVertexBuffer(vertices)).then(data => {
-            // @ts-ignore
-            this.vertices = data;
-            return data;
-        });
         this.world = new mat4([
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -214,7 +90,7 @@ export class Shape  {
         ]);
         this.color = new Float32Array(color);
         this.pick_color = new Float32Array(pick_color);
-        this.display = "inherit";
+        this.display = display;
     }
 
     *[Symbol.iterator]() {
@@ -273,12 +149,19 @@ export class Shape  {
             setUniform(gl, map.get(key)!, val(this));
         }
 
-        gl.drawArrays(this.method, offset, this.vertices.byteLength/STRIDE);
+        if (this.indices > 0) {
+            gl.drawElements(this.method, this.indices, gl.UNSIGNED_INT, offset*4);
+        }
     }
 }
 
 export class Grid extends Shape {
+    public override readonly buffer;
+    public override readonly vertices = 0;
+    public override readonly indices = 0;
+
     constructor(
+        gl: WebGL2RenderingContext,
         xmax: number,
         ymax: number,
         step: number,
@@ -289,18 +172,94 @@ export class Grid extends Shape {
             display = "inherit",
         }: ShapeProps,
     ) {
-        super(DrawType.LINES, createGrid(xmax, ymax, step), id, type, {pos, color, pick_color});
-        this.display = display;
+        super(DrawType.LINES, id, type, {pos, color, pick_color, display});
+        this.buffer = Promise.resolve().then<[WebGLBuffer, WebGLBuffer]>(() => {
+            const data = createGrid(xmax, ymax, step);
+            const [vok, vbuff] = createStaticBuffer(gl, data);
+            if (!vok) {
+                throw new Error("Failed to create buffer.");
+            }
+            const indices = new Uint32Array(data.byteLength/4);
+            for (let i = 0; i < indices.length; i++) {
+                indices[i] = i;
+            }
+            const [iok, ibuff] = createStaticBuffer(gl, indices, gl.ELEMENT_ARRAY_BUFFER);
+            if (!iok) {
+                throw new Error("Failed to create index buffer.");
+            }
+            // @ts-ignore
+            this.vertices = data.byteLength/4, this.indices = indices.byteLength/4;
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+            return [vbuff!, ibuff!];
+        });
     }
 }
+
+const cache = new Map<string, Promise<[WebGLBuffer, WebGLBuffer]>>();
 
 export class Sphere extends Shape {
     public override readonly buffer;
     public override readonly world;
+
     constructor(
-        radius: number,
-        latitudeBands: number,
-        longitudeBands: number,
+        gl: WebGL2RenderingContext,
+        {
+            id = -1, type = ShapeType.SPHERE,
+            pos = [0, 0, 0],
+            scale = [1, 1, 1],
+            color = WHITE, pick_color = WHITE,
+            display = "inherit",
+        }: ShapeProps
+    ) {
+        super(DrawType.TRIANGLES, id, type,  {pos, color, pick_color, display});
+
+        if (!cache.has(this.constructor.name)) {
+            cache.set(this.constructor.name, fetch(OBJECT_FILES[0]).then<[WebGLBuffer, WebGLBuffer]>(async res => {
+                const view = new DataView(await res.arrayBuffer());
+                const n = view.getInt32(0, true) + 4;
+
+                const [vok, vbuff] = createStaticBuffer(gl, view.buffer.slice(4, n));
+                if (!vok) {
+                    throw new Error("Failed to create vertex buffer.");
+                }
+                const [iok, ibuff] = createStaticBuffer(gl, view.buffer.slice(n), gl.ELEMENT_ARRAY_BUFFER);
+                if (!iok) {
+                    throw new Error("Failed to create index buffer.");
+                }
+    
+                return Promise.resolve([vbuff!, ibuff!]);
+            }));
+        } 
+        this.buffer = cache.get(this.constructor.name)!.then<[WebGLBuffer, WebGLBuffer]>(([vbuff, ibuff]) => {
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbuff);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibuff);
+            // @ts-ignore
+            this.vertices = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            // @ts-ignore
+            this.indices = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+            return [vbuff, ibuff];
+        });
+
+        this.world = new mat4([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            pos[0], pos[1], pos[2], 1,
+        ]).scale(scale[0], scale[1], scale[2]);
+    }
+}
+
+export class Circle extends Shape {
+    public override readonly buffer;
+    public override readonly world;
+
+    constructor(
+        gl: WebGL2RenderingContext,
         {
             id = 0, type = ShapeType.COLORED,
             pos = [0, 0, 0],
@@ -309,42 +268,52 @@ export class Sphere extends Shape {
             display = "inherit",
         }: ShapeProps,
     ) {
-        super(DrawType.TRIANGLES, createSphere(radius, latitudeBands, longitudeBands), id, type,  {pos, color, pick_color});
-        
-        this.buffer = fetch("/static/objects/sphere.bin").then(async res => {
-            const buffer = await res.arrayBuffer();
+        super(DrawType.TRIANGLE_STRIP, id, type, {pos, color, pick_color, display});
+        if (!cache.has(this.constructor.name)) {
+            cache.set(this.constructor.name, fetch(OBJECT_FILES[2]).then<[WebGLBuffer, WebGLBuffer]>(async res => {
+                const view = new DataView(await res.arrayBuffer());
+                const n = view.getInt32(0, true) + 4;
+
+                const [vok, vbuff] = createStaticBuffer(gl, view.buffer.slice(4, n));
+                if (!vok) {
+                    throw new Error("Failed to create vertex buffer.");
+                }
+                const [iok, ibuff] = createStaticBuffer(gl, view.buffer.slice(n), gl.ELEMENT_ARRAY_BUFFER);
+                if (!iok) {
+                    throw new Error("Failed to create index buffer.");
+                }
+    
+                return Promise.resolve([vbuff!, ibuff!]);
+            }));
+        } 
+        this.buffer = cache.get(this.constructor.name)!.then<[WebGLBuffer, WebGLBuffer]>(([vbuff, ibuff]) => {
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbuff);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibuff);
             // @ts-ignore
-            this.vertices = buffer;
-            return buffer;
-            // return res.arrayBuffer().then(data => {
-            //     this.vertices = data;
-            //     return data;
-            // });
+            this.vertices = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            // @ts-ignore
+            this.indices = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+            return [vbuff, ibuff];
         });
+
         this.world = new mat4([
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
         ]).scale(scale[0], scale[1], scale[2]);
-        this.display = display;
     }
 }
 
-export class Circle extends Shape {
-    constructor(
-        radius: number,
-        segments: number,
-        {
-            id = 0, type = ShapeType.COLORED,
-            pos = [0, 0, 0],
-            color = WHITE, pick_color = WHITE,
-            display = "inherit",
-        }: ShapeProps,
-    ) {
-        super(DrawType.TRIANGLE_STRIP, createCircle(radius, segments), id, type, {pos, color, pick_color});
-        this.display = display;
-    }
+const lineDefault: ShapeProps = {
+    id: -1,
+    type: ShapeType.LINE,
+    color: WHITE,
+    pick_color: WHITE,
+    display: "inherit",      
 }
 
 export class Line extends Shape {
@@ -352,21 +321,47 @@ export class Line extends Shape {
     public override readonly world;
 
     constructor(
+        gl: WebGL2RenderingContext,
         start: Array<number>,
         end: Array<number>,
         {
-            id = 0, type = ShapeType.LINE,
+            id = -1, type = ShapeType.LINE,
             color = WHITE, pick_color = WHITE,
             display = "inherit",
-        }: ShapeProps,
+        }: ShapeProps = lineDefault,
     ) {
-        super(DrawType.TRIANGLE_STRIP, createLine(0, start, end), id, type, {color, pick_color});
+        super(DrawType.TRIANGLES, id, type, {color, pick_color, display});
 
-        this.buffer = fetch("/static/objects/line-segment.bin").then(async res => {
-            const buffer = await res.arrayBuffer();
+        if (!cache.has(this.constructor.name)) {
+            cache.set(this.constructor.name, fetch(OBJECT_FILES[1]).then<[WebGLBuffer, WebGLBuffer]>(async res => {
+                const view = new DataView(await res.arrayBuffer());
+                const n = view.getInt32(0, true) + 4;
+
+                
+                const [vok, vbuff] = createStaticBuffer(gl, view.buffer.slice(4, n));
+                if (!vok) {
+                    throw new Error("Failed to create vertex buffer.");
+                }
+    
+                const [iok, ibuff] = createStaticBuffer(gl, view.buffer.slice(n), gl.ELEMENT_ARRAY_BUFFER);
+                if (!iok) {
+                    throw new Error("Failed to create index buffer.");
+                }
+    
+                return Promise.resolve([vbuff!, ibuff!]);
+            }));
+        } 
+        this.buffer = cache.get(this.constructor.name)!.then<[WebGLBuffer, WebGLBuffer]>(([vbuff, ibuff]) => {
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbuff);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibuff);
             // @ts-ignore
-            this.vertices = buffer;
-            return buffer;
+            this.vertices = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            // @ts-ignore
+            this.indices = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+            return [vbuff, ibuff];
         });
 
         const dx = end[0] - start[0];
@@ -378,59 +373,83 @@ export class Line extends Shape {
         const axis = up.cross(dir).normalize();
         const theta = Math.acos(up.dot(dir));
         this.world = new mat4([
-            1,0,0,0,
-            0,1,0,0,
-            0,0,1,0,
-            dx/2, dy/2 + start[1], dz/2, 1,
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            dx/2 + start[0], dy/2 + start[1], dz/2 + start[2], 1,
         ])
             .rotateAxis(axis, theta)
             .scale(0.0015, len/2, 0.0015); // TODO: Extract the width.
-        this.display = display;
     }
 }
-
-interface TextureProps extends Omit<ShapeProps, "r"|"g"|"b"|"a"> {
-    size?: number,
-    tex?: number,
-    ratio?: number,
-    visible?: number,
-    rx?: number,
-    ry?: number,
-    rz?: number,
-}
-
-export class AtlasPlane extends Shape {
-    public override readonly texture;
+export class LinePlane extends Shape {
+    public override readonly buffer;
     public override readonly world;
 
     constructor(
-        depth: number,
+        gl: WebGL2RenderingContext,
+        start: Array<number>,
+        end: Array<number>,
         {
-            id = 0, type = ShapeType.TEXTURED,
-            tex = 0,
-            size = 1, ratio = 1,
-            pos = [0, 0, 0],
-            rotation = [0, 0, 0],
-            display = "inherit", visible = 1,
-        }: TextureProps,
+            id = -1, type = ShapeType.LINE,
+            color = WHITE, pick_color = WHITE,
+            display = "inherit",
+        }: ShapeProps = lineDefault,
     ) {
-        super(DrawType.TRIANGLES, createTexturePlane(size, depth, ratio), type, id, {});
+        super(DrawType.TRIANGLES, id, type, {color, pick_color, display});
 
+        if (!cache.has(this.constructor.name)) {
+            cache.set(this.constructor.name, fetch(OBJECT_FILES[1]).then<[WebGLBuffer, WebGLBuffer]>(async res => {
+                const view = new DataView(await res.arrayBuffer());
+                const n = view.getInt32(0, true) + 4;
+
+                
+                const [vok, vbuff] = createStaticBuffer(gl, view.buffer.slice(4, n));
+                if (!vok) {
+                    throw new Error("Failed to create vertex buffer.");
+                }
+    
+                const [iok, ibuff] = createStaticBuffer(gl, view.buffer.slice(n), gl.ELEMENT_ARRAY_BUFFER);
+                if (!iok) {
+                    throw new Error("Failed to create index buffer.");
+                }
+    
+                return Promise.resolve([vbuff!, ibuff!]);
+            }));
+        } 
+        this.buffer = cache.get(this.constructor.name)!.then<[WebGLBuffer, WebGLBuffer]>(([vbuff, ibuff]) => {
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbuff);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibuff);
+            // @ts-ignore
+            this.vertices = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            // @ts-ignore
+            this.indices = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+            return [vbuff, ibuff];
+        });
+
+        const dx = end[0] - start[0];
+        const dy = end[1] - start[1];
+        const dz = end[2] - start[2];
+        const len = Math.hypot(dx, dy, dz);
+        const up = new vec3(0, 1, 0);
+        const dir = new vec3(dx, dy, dz).normalize();
+        const axis = up.cross(dir).normalize();
+        const theta = Math.acos(up.dot(dir));
         this.world = new mat4([
-            -1, 0, 0, 0,
-            0, 0, -1, 0,
+            1, 0, 0, 0,
             0, 1, 0, 0,
-            pos[0], pos[1], pos[2], 1,
-        ]).rotate(rotation[0], rotation[1], rotation[2]);
-
-        this.texture = tex;
-        this.display = display;
-        this.visible = visible;
+            0, 0, 1, 0,
+            dx/2 + start[0], 0.005, dz/2 + start[2] + 0.005, 1,
+        ])
+            .rotateAxis(axis, theta)
+            .scale(0.0015, len/2, 0.0015); // TODO: Extract the width.
     }
 }
 
-interface CompositeProps extends Omit<ShapeProps, "r"|"g"|"b"|"a"> {
-    visible?: number,
+interface CompositeProps extends Omit<ShapeProps, "color" | "pick_color"> {
     shapes?: Array<Shape>,
 }
 
@@ -438,43 +457,79 @@ export class Composite extends Shape {
     public override readonly buffer;
     public readonly shapes;
 
-    constructor({
+    constructor(
+    gl: WebGL2RenderingContext,
+    {
         id = 0, type = ShapeType.COLORED,
         pos = [0, 0, 0],
         display = "inherit", visible = 1,
         shapes = []
     }: CompositeProps
     ) {
-        super(0, [], id, type, {pos});
+        super(0, id, type, {pos});
 
-        const buffers = [];
-        for (const shape of shapes ) {
-            for (const child of shape) {
-                // Hijack the world matrix.
-                child.world[12] += pos[0];
-                child.world[13] += pos[1];
-                child.world[14] += pos[2];
-    
-                // Hijack the id.
-                if (!child.id) {
-                    // @ts-ignore
-                    child.id = id;
+        const key = shapes.map(shape => shape.constructor.name).join();
+        if (!cache.has(key)) {
+            cache.set(key, Promise.all(shapes.map(shape => shape.buffer)).then(buffers => {
+                const [cvOk, cvBuff] = createStaticBufferN(gl, shapes.reduce((acc, shape) => acc + shape.vertices*4, 0));
+                if (!cvOk) {
+                    throw new Error("Failed to create vertex buffer.");
                 }
-            }
+                const [ciOk, ciBuff] = createStaticBufferN(gl, shapes.reduce((acc, shape) => acc + shape.indices*4, 0), gl.ELEMENT_ARRAY_BUFFER);
+                if (!ciOk) {
+                    throw new Error("Failed to create index buffer.");
+                }
 
-            buffers.push(shape.buffer);
+                let offset = [0, 0];
+                for (const [vBuff, iBuff] of buffers) {
+                    gl.bindBuffer(gl.ARRAY_BUFFER, vBuff);
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBuff);
+
+                    const vView = new Float32Array(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/4);
+                    gl.getBufferSubData(gl.ARRAY_BUFFER, 0, vView, 0);
+
+                    const iView = new Int32Array(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/4);
+                    gl.getBufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, iView, 0);
+                    for (let i = 0; i < iView.length; i++) {
+                        iView[i] += offset[0]/(8*4);
+                    }
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, cvBuff);
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ciBuff);
+                    gl.bufferSubData(gl.ARRAY_BUFFER, offset[0], vView);
+                    gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, offset[1], iView);
+
+                    offset[0] += vView.byteLength;
+                    offset[1] += iView.length*4;
+                    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+                }
+
+                return Promise.resolve([cvBuff!, ciBuff!]);
+            }));
         }
-        this.buffer = Promise.all(buffers).then(data => {
-            let n = 0;
-            for (const vertices of data) {
-                n += vertices.byteLength;
-            }
+        this.buffer = cache.get(key)!.then<[WebGLBuffer, WebGLBuffer]>(([vBuff, iBuff]) => {
+            gl.bindBuffer(gl.ARRAY_BUFFER, vBuff);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBuff);
             // @ts-ignore
-            this.vertices = vertexBufferFrom(data, n);
+            this.vertices = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            // @ts-ignore
+            this.indices = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-            return this.vertices;
+            return [vBuff, iBuff];
         });
+
         this.shapes = shapes;
+        for (const shape of this) {
+            if (shape.id != -1) {
+                continue;
+            }
+            // Hijack the id.
+            Reflect.set(shape, "id", id);
+        }
+
         this.display = display;
         this.visible = visible;
     }
@@ -534,47 +589,37 @@ export class Composite extends Shape {
         this.focused = 0;
     }
 
-    override draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawObject: DrawInfo<Shape>, offset = 0) {
+    override draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset = 0) {
         if (!this.visible) {
             return;
         }
 
         for (const shape of this.shapes) {
-            shape.draw(gl, map, drawObject, offset);
-            offset += shape.vertices.byteLength/STRIDE;
+            shape.draw(gl, map, drawInfo, offset);
+            if (shape.indices > 0) {
+                offset += shape.indices;
+            } else {
+                offset += shape.vertices;
+            }
         }
     }
 }
 
 export class Node extends Composite {
-    constructor({id = 0, pos = [0, 0, 0]}: CompositeProps) {
-        super({id, display: "fixed", pos: [pos[0], 0.0, pos[2]], shapes: [
-            new Sphere(0.015, 16, 16, {pos: [0.0, pos[1], 0.0], scale: [0.025, 0.025, 0.025], pick_color: [255, 141, 35]}),
-            //new Circle(0.02, 16, {type: ShapeType.SHADOW, y: 0.002, color: [0, 0, 0]}),
+    constructor(gl: WebGL2RenderingContext, {id = -1, pos = [0, 0, 0]}: CompositeProps) {
+        super(gl, {id, display: "fixed", shapes: [
+            new Sphere(gl, {pos: [pos[0], pos[1], pos[2]], scale: [0.025, 0.025, 0.025], pick_color: [255, 141, 35]}),
+            new Circle(gl, {type: ShapeType.SHADOW, pos: [pos[0], 0.01, pos[2]], scale: [0.0275, 0.0275, 0.0275], color: [0, 0, 0]}),
         ]});
     }
 }
 
 export class Edge extends Composite {
-    constructor(start: Array<number>, end: Array<number>, {id = 0}: CompositeProps) {
-        super({id, pos: [start[0], 0.0, start[2]], shapes: [
-            new Line(start, end, {pick_color: [255, 141, 35]}),
-            //new Line(start, end, 0.005, {type: ShapeType.SHADOW, pos, color: [0, 0, 0]}),
+    constructor(gl: WebGL2RenderingContext, start: Array<number>, end: Array<number>) {
+        super(gl, {id: -1, shapes: [
+            new Line(gl, start, end, {pick_color: [255, 141, 35]}),
+            new LinePlane(gl, start, end, {type: ShapeType.SHADOW, color: [0, 0, 0]}),
         ]});
-        this.visible = 1;
-    }
-}
-
-export class Icon extends Composite {
-    constructor(
-        icon: number,
-        /*logo: number,*/
-        {id = 0, pos = [0, 0, 0]}: CompositeProps
-    ) {
-        super({id, pos, shapes: [
-            new Composite({id, display: "fixed", pos, shapes: [
-                new AtlasPlane(icon, {type: ShapeType.LOGO, tex: 0, size: 0.03}),
-            ]}),
-        ]});
+        this.visible = 0;
     }
 }

@@ -24,8 +24,7 @@ export type DrawInfo<T> = {
     [key: string]: number | ArrayBuffer | ((shape: T) => number | ArrayBuffer);
 };
 export interface Drawable<T> extends Iterable<T> {
-    readonly buffer: Promise<ArrayBuffer>;
-    readonly vertices: ArrayBuffer;
+    readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
     draw(gl: WebGLRenderingContext, map: Map<string, UniformObject>, drawObject: DrawInfo<T>, offset?: number): void;
 }
 export interface CompositeLike<T> extends Drawable<T> {
