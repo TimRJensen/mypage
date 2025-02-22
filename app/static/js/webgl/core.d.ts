@@ -92,7 +92,8 @@ export declare class Program<T extends Drawable<T>> {
     readonly drawInfo: DrawInfo<T>;
     constructor(canvas: HTMLCanvasElement, shapes: Array<T>, vs: string, fs: string, options?: ProgramOptions<T>);
     use(): void;
-    draw(): void;
+    protected static lastTime: number;
+    draw(time: number): void;
     render(options?: DrawInfo<T>): void;
     fire(e: PluginEvent<T>): void;
     on<E extends PluginEvent<T>>(type: keyof EventMap<T>, handler: PluginEventHandler<T, E>): void;

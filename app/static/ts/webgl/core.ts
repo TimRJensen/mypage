@@ -435,6 +435,11 @@ export class Program<T extends Drawable<T>> {
         if (!ok) {
             return;
         }
+
+        // Resize canvas
+        gl.canvas.width = canvas.width*dpi;
+        gl.canvas.height = canvas.height*dpi;
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         
         this.gl = gl;
         this.quad = quad!;
@@ -459,19 +464,23 @@ export class Program<T extends Drawable<T>> {
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
     }
 
-    draw() {
-        const {gl, canvas, uniforms, drawInfo} = this;
-        // Resize canvas
-        const dpi = window.devicePixelRatio || 1;
-        gl.canvas.width = canvas.clientWidth*dpi;
-        gl.canvas.height = canvas.clientHeight*dpi;
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    protected static lastTime = 0;
 
-        // Resize framebuffer
-        const [ok, fbo] = resizeFrameBufferObject(gl, this.fbo!, canvas.width, canvas.height);
-        if (!ok) {
+    draw(time: number) {
+        if (time - Program.lastTime < 1000/60) {
+            requestAnimationFrame(this.draw.bind(this));
             return;
         }
+        Program.lastTime = time;
+
+        const {gl, uniforms, drawInfo, fbo} = this;
+
+
+        // Resize framebuffer
+        // const [ok, fbo] = resizeFrameBufferObject(gl, this.fbo!, canvas.width, canvas.height);
+        // if (!ok) {
+        //     return;
+        // }
         
         // Clear canvas.
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo!.buff);

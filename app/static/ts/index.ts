@@ -23,120 +23,40 @@ import fs from "./webgl/shaders/fragment-main.js";
  */
 (function () {
     const canvas = document.querySelector<HTMLCanvasElement>("#canvas-box #canvas")!;
-    const gl = canvas.getContext("webgl2");
+    const gl = canvas.getContext("webgl2", {antialias: true});
     if (!gl) {
         throw new Error("WebGL2 is not supported");
     }
     // Shapes
     const shapes = [
         // Grid
-        new Grid(gl, 2, 1, 26, {id: 0, display: "fixed", color: [160, 117, 206]}),
+        new Grid(gl, 2, 1, 14, {id: 0, display: "fixed", color: [160, 117, 206]}),
         // Root
-        new Node(gl, {id: 1, pos: [0.06875, 0.06, -0.82625]}),
+        new Node(gl, {id: 1, pos: [0.0714, 0.06, -0.798]}),
         new Composite(gl, {id: 2, shapes: [
-            new Node(gl, {pos: [-0.3125, 0.06, -0.575]}),
-            new Edge(gl, [-0.3125, 0.06, -0.575], [0.06875, 0.06, -0.82625]),
+            new Node(gl, {pos: [-0.357, 0.06, -0.5125]}),
+            new Edge(gl, [-0.357, 0.06, -0.5125], [0.0714, 0.06, -0.798]),
         ]}),
         new Composite(gl, {id: 3, shapes: [
-            new Node(gl, {pos: [0.4375, 0.06, -0.575]}),
-            new Edge(gl, [0.4375, 0.06, -0.575], [0.06875, 0.06, -0.82625]),
+            new Node(gl, {pos: [0.5, 0.06, -0.5125]}),
+            new Edge(gl, [0.5, 0.06, -0.5125], [0.0714, 0.06, -0.798]),
         ]}),
         new Composite(gl, {id: 4, shapes: [
-            new Node(gl, {pos: [0.0, 0.06, -0.42]}),
-            new Edge(gl, [0.0, 0.06, -0.42], [0.06875, 0.06, -0.82625]),
+            new Node(gl, {pos: [0.0714, 0.06, -0.2268]}),
+            new Edge(gl, [0.0714, 0.06, -0.2268], [0.0714, 0.06, -0.798]),
         ]}),
-
-
-        // Personal skills
-        // new Composite({id: 2, x: -0.315, z: -0.63, shapes: [
-        //     new Node({y: 0.04}),
-        //     new Edge([-0.315, 0.04, -0.63], [0, 0.04, -0.84], {}),
-        //     new Composite({visible: 0, shapes: [
-        //         // Critical thinking
-        //         new Composite({id: 50, display: "fixed", x: -0.315, z: 0.105, shapes: [
-        //             new AtlasPlane(2, {tex: 2, size: 0.03, y: 0.04, ratio: 1.78, rz: 0.78}),
-        //         ]}),
-        //         // Analytical thinking
-        //         new Composite({id: 51, display: "fixed", x: -0.525, y: 0.005, z: 0.21, shapes: [
-        //             new AtlasPlane(0, {tex: 2, size: 0.03, y: 0.04, ratio: 1.78, rz: 0.78}),
-        //         ]}),
-        //         // Communication
-        //         new Composite({id: 52, display: "fixed", x: -0.21, z: 0.21, shapes: [
-        //             new AtlasPlane(1, {tex: 2, size: 0.03, y: 0.04, ratio: 1.78, rz: 0.78}),
-        //         ]}),
-        //         // Organization
-        //         new Composite({id: 53, display: "fixed", x: -0.42, y: 0.005, z: 0.315, shapes: [
-        //             new AtlasPlane(3, {tex: 2, size: 0.03, y: 0.04, ratio: 1.78, rz: 0.78}),
-        //         ]}),
-        //     ]}),
-        // ]}),
-        // Projects
-        // new Composite({id: 3, x: 0.315, z: -0.63, shapes: [
-        //     new Node({y: 0.04}),
-        //     new Edge([0.315, 0.04, -0.63], [0, 0.04, -0.84], {y: 0.04}),
-        // ]}),
-        //Technical skills
-        // new Composite( {id: 4, x: 0, z: -0.42, shapes: [
-        //     new Node( {y: 0.04}),
-        //     new Edge( [0, 0.04, -0.42], [0, 0.04, -0.84], {y: 0.04}),
-        // ]}),
-        // // Technical skills - Backend
-        // new Composite({id: 5, x: -0.315, shapes: [
-        //     new Node({y: 0.04}),
-        //     new Edge([-0.315, 0.04, 0], [0, 0.04, -0.42], {y: 0.04}),
-        //     new Composite( {visible: 0, shapes: [
-        //         // NodeJS
-        //         new Icon(11, 11, {id: 100, y: 0.04, z: 0.315}),
-        //         // Deno
-        //         new Icon(18, 3, {id: 101, x: -0.0991, y: 0.04, z: 0.2990}),
-        //         // NextJS
-        //         new Icon(19, 10, {id: 102, x: -0.1881, y: 0.04, z: 0.2527}),
-        //         // PSQL
-        //         new Icon(12, 12, {id: 103, x: -0.2580, y: 0.04, z: 0.1807}),
-        //         // Docker
-        //         new Icon(4, 4, {id: 104, x: -0.3018, y: 0.04, z: 0.103}),
-        //         // Git
-        //         new Icon(6, 6, {id: 105, x: -0.3149, y: 0.04, z: 0.0092}),
-        //     ]}),
-        // ]}),
-        // Technical skills - Frontend
-        // new Composite({id: 6, z: 0.105, shapes: [
-        //     new Node({y: 0.04}),
-        //     new Edge([0, 0.04, 0.105], [0, 0.04, -0.42], {y: 0.04}),
-        //     new Composite({visible: 0, shapes: [
-        //         // TS
-        //         new Icon(15, 15, {id: 200, y: 0.04, x: 0.26, z: 0.11}),
-        //         // JS
-        //         new Icon(9, 9, {id: 201, y: 0.04, x: 0.20, z: 0.21}),
-        //         // React
-        //         new Icon(14, 14, {id: 202, y: 0.04, x: 0.11, z: 0.29}),
-        //         // Vue
-        //         new Icon(16, 16, {id: 203, y: 0.04, z: 0.32}),
-        //         // HTML
-        //         new Icon(8, 8, {id: 204, y: 0.04, x: -0.11, z: 0.2901}),
-        //         // CSS
-        //         new Icon(2, 2, {id: 205, y: 0.04, x: -0.20, z: 0.21}),
-        //         // WASM
-        //         new Icon(20, 17, {id: 206, y: 0.04, x: -0.26, z: 0.11}),
-        //     ]}),
-        // ]}),
-        // Technical skills - All purpose
-        // new Composite({id: 7, x: 0.315, shapes: [
-        //     new Node({y: 0.04}),
-        //     new Edge([0.315, 0.04, 0], [0, 0.04, -0.42], {y: 0.04}),
-        //     new Composite({visible: 0, shapes: [
-        //         // C
-        //         new Icon(0, 0, {id: 301, y: 0.04, x: 0.011, z: 0.3148}),
-        //         // C#
-        //         new Icon(1, 1, {id: 302, y: 0.04, x: 0.1281, z: 0.2878}),
-        //         // F#
-        //         new Icon(5, 5, {id: 303, y: 0.04, x: 0.2266, z: 0.2188}),
-        //         // Python
-        //         new Icon(13, 13, {id: 304, y: 0.04, x: 0.2921, z: 0.1180}),
-        //         // Go
-        //         new Icon(7, 7, {id: 305, y: 0.04, x: 0.3150}),
-        //     ]}),
-        // ]}),
+        new Composite(gl, {id: 5, shapes: [
+            new Node(gl, {pos: [-0.5, 0.06, 0.2018]}),
+            new Edge(gl, [-0.5, 0.06, 0.2018], [0.0714, 0.06, -0.2268]),
+        ]}),
+        new Composite(gl, {id: 6, shapes: [
+            new Node(gl, {pos: [0.0714, 0.06, 0.3446]}),
+            new Edge(gl, [0.0714, 0.06, 0.3446], [0.0714, 0.06, -0.2268]),
+        ]}),
+        new Composite(gl, {id: 7, shapes: [
+            new Node(gl, {pos: [0.6429, 0.06, 0.2018]}),
+            new Edge(gl, [0.6429, 0.06, 0.2018], [0.0714, 0.06, -0.2268]),
+        ]}),
     ];
     // Breadcumbs - order mattters. Index in msgs == index in shapes
     const msgs = [
@@ -155,9 +75,10 @@ import fs from "./webgl/shaders/fragment-main.js";
     const vpm = mat4
         .perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 5)
         .mul(mat4.lookAt(new vec3(0.2, 0.4, -1.45), new vec3(0, 0, 0), new vec3(0, 1, 0)));
+        console.log(canvas.width, canvas.height);
 
     // Create the WebGL program.
-    const main = new Program(canvas, shapes.slice(0, 6), vs, fs, {
+    const main = new Program(canvas, shapes, vs, fs, {
         color: [102, 51, 153, 1],
         attrs: {
             a_position: {type: WebGL2RenderingContext.FLOAT, len: 3, stride: 32, size: 4},
@@ -258,8 +179,8 @@ import fs from "./webgl/shaders/fragment-main.js";
         if (e.id == 0) {
             picked[0] = shapes[1].isFocused() ? 1 : -1, picked[1] = -1, picked[2] = -1;
             main.drawInfo.u_picked = picked;
-            // shapes[4].hoverOut();
-            // shapes[4].hide();
+            shapes[4].hoverOut();
+            shapes[4].hide();
             lastShape[0].hoverOut();
             lastShape[0].hide();
             return;
@@ -290,76 +211,46 @@ import fs from "./webgl/shaders/fragment-main.js";
     const srcXZ = [0.2, -1.35];
     const trgXZ = [0, 0];
     let time = -1;
-    // pointerPlugin.on("pointerdown", (e) => {
-    //     if (e.id == 0) {
-    //         picked[5] = -1;
-    //         main.drawInfo.u_picked = picked;
-    //         lastShape[1].blur();
-    //         lastShape[1].hide();
-    //         return;
-    //     }
+    main.on("pointerdown", (e: PointerPluginEvent) => {
+        if (e.id == 0) {
+            picked[5] = -1;
+            main.drawInfo.u_picked = picked;
+            lastShape[1].blur();
+            lastShape[1].hide();
+            return;
+        }
 
-    //     for (const shape of shapes) {
-    //         for (const child of shape) {
-    //             if (child.isFocused()) {
-    //                 child.blur();
-    //                 child.hide();
-    //             }
-    //         }
-    //         shape.blur();
-    //         shape.hide();
-    //     }
+        for (const shape of shapes) {
+            for (const child of shape) {
+                if (child.isFocused()) {
+                    child.blur();
+                    child.hide();
+                }
+            }
+            shape.blur();
+            shape.hide();
+        }
 
-    //     switch (e.shape.id) {
-    //         case 5: case 6: case 7:
-    //             picked[0] = 1, picked[3] = 4, picked[4] = e.id, picked[5] = -1;
-    //             shapes[4].focus();
-    //             shapes[4].show();
-    //             shapes[1].focus();
-    //             time = performance.now();
-    //             break;
-    //         case 100: case 101: case 102: case 103: case 104: case 105: 
-    //         case 200: case 201: case 202: case 203: case 204: case 205: case 206:
-    //         case 300: case 301: case 302: case 303: case 304: case 305: {
-    //             picked[0] = 1, picked[3] = 4, picked[4] = e.composite.id, picked[5] = e.id;
-    //             shapes[4].focus();
-    //             shapes[4].show();
-    //             lastShape[1] = e.shape;
-    //             break;
-    //         }
-    //         case 2:
-    //             picked[0] = 1, picked[3] = 2, picked[4] = -1, picked[5] = -1;
-    //             shapes[2].focus();
-    //             shapes[2].show();
-    //             shapes[1].focus();
-    //             time = performance.now();
-    //             break;
-    //         case 50: case 51: case 52: case 53: {
-    //             picked[0] = 1, picked[3] = 2, picked[4] = e.id;
-    //             shapes[2].focus();
-    //             shapes[2].show();
-    //             lastShape[1] = e.shape;
-    //             break;
-    //         }
-    //         default: {
-    //             picked[0] = 1, picked[3] = e.id, picked[4] = -1, picked[5] = -1;
-    //             shapes[1].focus();
-    //             time = performance.now();
-    //         }
-    //     }
+        switch (e.shape.id) {
+            default: {
+                picked[0] = 1, picked[3] = e.id, picked[4] = -1, picked[5] = -1;
+                shapes[1].focus();
+                time = performance.now();
+            }
+        }
 
-    //     main.drawInfo.u_picked = picked;
-    //     e.shape.focus();
-    //     e.shape.show();
-    //     e.composite.focus();
-    //     e.composite.show();
+        main.drawInfo.u_picked = picked;
+        e.shape.focus();
+        e.shape.show();
+        e.composite.focus();
+        e.composite.show();
 
-    //     const dx = srcXZ[0] - e.composite.world[12];
-    //     const dz = srcXZ[1] - e.composite.world[14];
-    //     xz[0] = e.composite.world[12]; xz[1] = e.composite.world[14];
-    //     trgXZ[0] = e.composite.world[12]; trgXZ[1] = e.composite.world[14];
-    //     lastXZ[0] = (xz[0] + 1.0)*canvas.width/2; lastXZ[1] = (1.0 - xz[0])*canvas.height/2;
-    // });
+        const dx = srcXZ[0] - e.composite.world[12];
+        const dz = srcXZ[1] - e.composite.world[14];
+        xz[0] = dx; xz[1] = dz;
+        trgXZ[0] = e.composite.world[12]; trgXZ[1] = e.composite.world[14];
+        lastXZ[0] = (xz[0] + 1.0)*canvas.width/2; lastXZ[1] = (1.0 - xz[0])*canvas.height/2;
+    });
 
     // Handle breadcrumbs
     const breadcrumbs = document.querySelector<HTMLDivElement>("#canvas-box .breadcrumbs")!;

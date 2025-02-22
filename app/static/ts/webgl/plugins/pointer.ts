@@ -38,7 +38,7 @@ function handler(gl: WebGL2RenderingContext, program: Program<Shape>, shapes: Ar
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, program.fbo.buff);
         gl.readBuffer(gl.COLOR_ATTACHMENT2);
         gl.readPixels(
-            ((ndcX + 1)*0.5)*gl.canvas.width, 
+            ((ndcX + 1)*0.5)*gl.canvas.width,
             ((-ndcY + 1)*0.5)*gl.canvas.height,
             1, 1,
             gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_FORMAT),

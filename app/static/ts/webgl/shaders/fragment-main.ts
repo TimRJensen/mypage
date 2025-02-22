@@ -21,7 +21,7 @@ void main() {
     vec3 threshold = vec3(0.0, 0.0, 0.0);
 
     if ((u_type&0x6) == 0x6) {
-        f_color = vec4(color, 0.4);
+        f_color = vec4(color, 0.2);
         f_threshold = vec4(threshold, 1.0);
         f_id = u_id;
         return;

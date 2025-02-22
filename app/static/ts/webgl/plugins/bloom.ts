@@ -81,7 +81,7 @@ export class BloomPlugin implements PluginLike {
         
         // Create the bloom framebuffer objects
         for (let i = 0; i < 3; i++) {
-            const [ok, fbo] = createFrameBufferObject(gl, program.fbo.width, program.fbo.height, gl.RGBA8, 0, false);
+            const [ok, fbo] = createFrameBufferObject(gl, program.fbo.width*0.25, program.fbo.height*0.25, gl.RGBA8, 0, false);
             if (!ok) {
                 console.error("Bloom Plugin: Failed to create framebuffer object");
                 return;

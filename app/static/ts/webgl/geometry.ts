@@ -32,14 +32,14 @@ enum DrawType {
 
 function createGrid(xmax: number, ymax: number, step: number) {
     const vertices = [];
-    step = (xmax/ymax/step)*2;
+    //step = (xmax/ymax/step)*2;
 
-    for (let x = -xmax; x <= xmax; x += step) {
+    for (let x = -xmax; x < xmax; x += xmax/step) {
         // xyz uv nxnynz
         vertices.push(x, 0, -ymax, 0, 0, 0.6, 1, 1);
         vertices.push(x, 0, ymax, 0, 0, 0.6, 1, 1);
     }
-    for (let y = -ymax; y <= ymax; y += step) {
+    for (let y = -ymax; y < ymax; y += xmax/step) {
         // xyz uv nxnynz
         vertices.push(-xmax, 0, y, 0, 0, 0.6, 1, 1);
         vertices.push(xmax, 0, y, 0, 0, 0.6, 1, 1);
@@ -430,6 +430,10 @@ export class LinePlane extends Shape {
             return [vbuff, ibuff];
         });
 
+        start[0] += -0.0025;
+        start[2] += 0.01;
+        end[0] += -0.0025;
+        end[2] += 0.01;
         const dx = end[0] - start[0];
         const dy = end[1] - start[1];
         const dz = end[2] - start[2];
@@ -442,10 +446,10 @@ export class LinePlane extends Shape {
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 1, 0,
-            dx/2 + start[0], 0.005, dz/2 + start[2] + 0.005, 1,
+            dx/2 + start[0], 0.005, dz/2 + start[2], 1,
         ])
             .rotateAxis(axis, theta)
-            .scale(0.0015, len/2, 0.0015); // TODO: Extract the width.
+            .scale(0.001, len/2, 0.001); // TODO: Extract the width.
     }
 }
 
@@ -609,7 +613,7 @@ export class Node extends Composite {
     constructor(gl: WebGL2RenderingContext, {id = -1, pos = [0, 0, 0]}: CompositeProps) {
         super(gl, {id, display: "fixed", shapes: [
             new Sphere(gl, {pos: [pos[0], pos[1], pos[2]], scale: [0.025, 0.025, 0.025], pick_color: [255, 141, 35]}),
-            new Circle(gl, {type: ShapeType.SHADOW, pos: [pos[0], 0.01, pos[2]], scale: [0.0275, 0.0275, 0.0275], color: [0, 0, 0]}),
+            new Circle(gl, {type: ShapeType.SHADOW, pos: [pos[0], 0.01, pos[2]], scale: [0.02, 0.02, 0.02], color: [0, 0, 0]}),
         ]});
     }
 }
