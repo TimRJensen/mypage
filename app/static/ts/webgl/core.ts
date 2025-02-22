@@ -430,7 +430,7 @@ export class Program<T extends Drawable<T>> {
         }
 
         // Initialize frambuffer
-        const dpi = window.devicePixelRatio || 1;
+        const dpi = window.devicePixelRatio >= 1.5 ? 1.5 : 1;
         const [ok, main_fbo] = createFrameBufferObject(gl, canvas.width*dpi, canvas.height*dpi);
         if (!ok) {
             return;
