@@ -49,9 +49,6 @@ function handler(gl: WebGL2RenderingContext, program: Program<Shape>, shapes: Ar
     
         // Find shape
         const id = data[0];
-        if (e.type == "pointerdown") {
-            console.log(id);
-        }
         if (id == 0) {
             program.fire(new PointerPluginEvent(e.type, {id, shape: null!, composite: null!}));
             return;

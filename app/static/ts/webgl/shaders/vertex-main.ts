@@ -24,6 +24,6 @@ void main() {
     if ((u_type&0x2) == 2) {
         v_brightness = max(dot(u_light_dir, normalize(mat3(u_model)*a_position)), 0.0);
     } else {
-        v_brightness = max(dot(u_light_dir, normalize(mat3(u_model)*a_normal)), 0.0);
+        v_brightness = max(dot(u_light_dir, normalize(mat3(u_vpm*u_model)*a_normal)), 0.0);
     }
 }`;

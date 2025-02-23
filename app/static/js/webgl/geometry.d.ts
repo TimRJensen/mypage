@@ -56,6 +56,11 @@ export declare class Sphere extends Shape {
     readonly world: mat4;
     constructor(gl: WebGL2RenderingContext, { id, type, pos, scale, color, pick_color, display, }: ShapeProps);
 }
+export declare class Root extends Shape {
+    readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
+    readonly world: mat4;
+    constructor(gl: WebGL2RenderingContext, { id, type, pos, scale, color, pick_color, display, }: ShapeProps);
+}
 export declare class Circle extends Shape {
     readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
     readonly world: mat4;
@@ -76,6 +81,7 @@ interface CompositeProps extends Omit<ShapeProps, "color" | "pick_color"> {
 }
 export declare class Composite extends Shape {
     readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
+    readonly world: mat4;
     readonly shapes: Shape[];
     constructor(gl: WebGL2RenderingContext, { id, type, pos, display, visible, shapes }: CompositeProps);
     [Symbol.iterator](this: any): Generator<any, void, any>;
@@ -86,6 +92,9 @@ export declare class Composite extends Shape {
     focus(): void;
     blur(): void;
     draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
+}
+export declare class RootNode extends Composite {
+    constructor(gl: WebGL2RenderingContext, { id, pos }: CompositeProps);
 }
 export declare class Node extends Composite {
     constructor(gl: WebGL2RenderingContext, { id, pos }: CompositeProps);

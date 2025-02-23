@@ -10,6 +10,7 @@ const OBJECT_FILES = [
     "/static/objects/indexed-line-segment.bin",
     "/static/objects/circle.bin",
     "/static/objects/line-plane.bin",
+    "/static/objects/root.bin",
 ]
 
 // ShapeType is a bitfield enum.
@@ -254,6 +255,64 @@ export class Sphere extends Shape {
     }
 }
 
+export class Root extends Shape {
+    public override readonly buffer;
+    public override readonly world;
+
+    constructor(
+        gl: WebGL2RenderingContext,
+        {
+            id = -1, type = ShapeType.COLORED,
+            pos = [0, 0, 0],
+            scale = [1, 1, 1],
+            color = WHITE, pick_color = WHITE,
+            display = "inherit",
+        }: ShapeProps
+    ) {
+        super(DrawType.TRIANGLES, id, type,  {pos, color, pick_color, display});
+
+        if (!cache.has(this.constructor.name)) {
+            cache.set(this.constructor.name, fetch(OBJECT_FILES[4]).then<[WebGLBuffer, WebGLBuffer]>(async res => {
+                const view = new DataView(await res.arrayBuffer());
+                const n = view.getInt32(0, true) + 4;
+
+                const [vok, vbuff] = createStaticBuffer(gl, view.buffer.slice(4, n));
+                if (!vok) {
+                    throw new Error("Failed to create vertex buffer.");
+                }
+                const [iok, ibuff] = createStaticBuffer(gl, view.buffer.slice(n), gl.ELEMENT_ARRAY_BUFFER);
+                if (!iok) {
+                    throw new Error("Failed to create index buffer.");
+                }
+    
+                return Promise.resolve([vbuff!, ibuff!]);
+            }));
+        } 
+        this.buffer = cache.get(this.constructor.name)!.then<[WebGLBuffer, WebGLBuffer]>(([vbuff, ibuff]) => {
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbuff);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibuff);
+            // @ts-ignore
+            this.vertices = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            // @ts-ignore
+            this.indices = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/4;
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+            return [vbuff, ibuff];
+        });
+
+        this.world = new mat4([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            pos[0], pos[1], pos[2], 1,
+        ])
+            .rotateZ(0)
+   
+            .scale(scale[0], scale[1], scale[2]);
+    }
+}
+
 export class Circle extends Shape {
     public override readonly buffer;
     public override readonly world;
@@ -261,7 +320,7 @@ export class Circle extends Shape {
     constructor(
         gl: WebGL2RenderingContext,
         {
-            id = 0, type = ShapeType.COLORED,
+            id = -1, type = ShapeType.COLORED,
             pos = [0, 0, 0],
             scale = [1, 1, 1],
             color = WHITE, pick_color = WHITE,
@@ -459,6 +518,7 @@ interface CompositeProps extends Omit<ShapeProps, "color" | "pick_color"> {
 
 export class Composite extends Shape {
     public override readonly buffer;
+    public override readonly world;
     public readonly shapes;
 
     constructor(
@@ -532,7 +592,18 @@ export class Composite extends Shape {
             }
             // Hijack the id.
             Reflect.set(shape, "id", id);
+
+            // Hijack the xyz
+            shape.world[12] += pos[0];
+            shape.world[13] += pos[1];
+            shape.world[14] += pos[2];
         }
+        this.world = new mat4([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            pos[0], pos[1], pos[2], 1,
+        ]);
 
         this.display = display;
         this.visible = visible;
@@ -609,18 +680,27 @@ export class Composite extends Shape {
     }
 }
 
+export class RootNode extends Composite {
+    constructor(gl: WebGL2RenderingContext, {id = -1, pos = [0, 0, 0]}: CompositeProps) {
+        super(gl, {id, display: "fixed", pos, shapes: [
+            new Root(gl, {pos: [0.0, 0.04, 0.0], scale: [0.075, 0.075, 0.075], pick_color: [255, 141, 35]}),
+            new Circle(gl, {type: ShapeType.SHADOW, pos: [0.0, 0.01, 0.0], scale: [0.02, 0.02, 0.02], color: [0, 0, 0]}),
+        ]});
+    }
+} 
+
 export class Node extends Composite {
     constructor(gl: WebGL2RenderingContext, {id = -1, pos = [0, 0, 0]}: CompositeProps) {
-        super(gl, {id, display: "fixed", shapes: [
-            new Sphere(gl, {pos: [pos[0], pos[1], pos[2]], scale: [0.025, 0.025, 0.025], pick_color: [255, 141, 35]}),
-            new Circle(gl, {type: ShapeType.SHADOW, pos: [pos[0], 0.01, pos[2]], scale: [0.02, 0.02, 0.02], color: [0, 0, 0]}),
+        super(gl, {id, display: "fixed", pos, shapes: [
+            new Sphere(gl, {pos: [0.0, 0.06, 0.0], scale: [0.025, 0.025, 0.025], pick_color: [255, 141, 35]}),
+            new Circle(gl, {type: ShapeType.SHADOW, pos: [0.0, 0.01, 0.0], scale: [0.02, 0.02, 0.02], color: [0, 0, 0]}),
         ]});
     }
 }
 
 export class Edge extends Composite {
     constructor(gl: WebGL2RenderingContext, start: Array<number>, end: Array<number>) {
-        super(gl, {id: -1, shapes: [
+        super(gl, {pos: [-start[0], 0.0, -start[2]], id: -1, shapes: [
             new Line(gl, start, end, {pick_color: [255, 141, 35]}),
             new LinePlane(gl, start, end, {type: ShapeType.SHADOW, color: [0, 0, 0]}),
         ]});
