@@ -12,13 +12,14 @@ export type UniformObject = {
     loc: WebGLUniformLocation;
     type: number;
 };
+export type TextureObject = {
+    idx: number;
+    width: number;
+    height: number;
+    depth: number;
+};
 export type TextureInfo = {
-    [key: string]: {
-        idx: number;
-        width: number;
-        height: number;
-        depth: number;
-    };
+    [key: string]: TextureObject;
 };
 export type DrawInfo<T> = {
     [key: string]: number | ArrayBuffer | ((shape: T) => number | ArrayBuffer);

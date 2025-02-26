@@ -1,17 +1,18 @@
 import { mat4 } from "../linalg.js";
-import { DrawInfo, UniformObject } from "./common.js";
+import { Drawable, DrawInfo, UniformObject } from "./common.js";
 export declare enum ShapeType {
     COLORED = 0,
     SPHERE = 2,
     LINE = 4,
-    SHADOW = 6,
+    BACKGROUND = 8,
+    SHADOW = 16,
     TEXTURED = 1,
     LOGO = 1
 }
 type ShapeProps = {
     id?: number;
     type?: number;
-    display?: "inherit" | "fixed" | "none";
+    display?: "inherit" | "fixed" | "hidden";
     visible?: number;
     pos?: [number, number, number];
     rotation?: [number, number, number];
@@ -20,71 +21,87 @@ type ShapeProps = {
     pick_color?: [number, number, number];
 };
 export declare class Shape {
+    readonly gl: WebGL2RenderingContext;
     readonly method: GLenum;
     readonly id: number;
     readonly type: ShapeType;
     readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
     readonly indices = 0;
     readonly vertices = 0;
+    readonly world: mat4;
     readonly color: Float32Array;
     readonly pick_color: Float32Array;
-    readonly world: mat4;
-    display: "inherit" | "fixed" | "none";
+    readonly depth: number;
+    display: "inherit" | "fixed" | "hidden";
     visible: number;
     hovered: number;
     focused: number;
-    constructor(method: GLenum, id?: number, type?: ShapeType, { pos, color, pick_color, display, }?: ShapeProps);
+    constructor(gl: WebGL2RenderingContext, method: GLenum, id: number, type: ShapeType, data: Promise<ArrayBuffer>, { pos, color, pick_color, display, }?: ShapeProps);
     [Symbol.iterator](): Generator<this, void, unknown>;
     show(): void;
     hide(): void;
     hoverIn(): void;
     hoverOut(): void;
-    isHovered(): boolean;
     focus(): void;
     blur(): void;
-    isFocused(): boolean;
     draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawObject: DrawInfo<Shape>, offset?: number): void;
 }
 export declare class Grid extends Shape {
-    readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
-    readonly vertices = 0;
-    readonly indices = 0;
     constructor(gl: WebGL2RenderingContext, xmax: number, ymax: number, step: number, { id, type, pos, color, pick_color, display, }: ShapeProps);
 }
 export declare class Sphere extends Shape {
-    readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
+    protected static data: Promise<ArrayBuffer>;
     readonly world: mat4;
     constructor(gl: WebGL2RenderingContext, { id, type, pos, scale, color, pick_color, display, }: ShapeProps);
 }
 export declare class Root extends Shape {
-    readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
+    protected static data: Promise<ArrayBuffer>;
     readonly world: mat4;
     constructor(gl: WebGL2RenderingContext, { id, type, pos, scale, color, pick_color, display, }: ShapeProps);
 }
 export declare class Circle extends Shape {
-    readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
+    protected static data: Promise<ArrayBuffer>;
+    readonly world: mat4;
+    constructor(gl: WebGL2RenderingContext, { id, type, pos, scale, color, pick_color, display, }: ShapeProps);
+}
+export declare class Background extends Circle {
+    readonly method: 6;
     readonly world: mat4;
     constructor(gl: WebGL2RenderingContext, { id, type, pos, scale, color, pick_color, display, }: ShapeProps);
 }
 export declare class Line extends Shape {
-    readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
+    protected static data: Promise<ArrayBuffer>;
     readonly world: mat4;
-    constructor(gl: WebGL2RenderingContext, start: Array<number>, end: Array<number>, { id, type, color, pick_color, display, }?: ShapeProps);
+    constructor(gl: WebGL2RenderingContext, start: Array<number>, end: Array<number>, scale: number, { id, type, color, pick_color, display, }?: ShapeProps);
 }
-export declare class LinePlane extends Shape {
-    readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
+export declare class Plane extends Shape {
+    protected static data: Promise<ArrayBuffer>;
     readonly world: mat4;
-    constructor(gl: WebGL2RenderingContext, start: Array<number>, end: Array<number>, { id, type, color, pick_color, display, }?: ShapeProps);
+    readonly depth: number;
+    constructor(gl: WebGL2RenderingContext, depth: number, { id, type, pos, scale, color, pick_color, display, }: ShapeProps);
 }
 interface CompositeProps extends Omit<ShapeProps, "color" | "pick_color"> {
     shapes?: Array<Shape>;
 }
-export declare class Composite extends Shape {
+export declare class Composite implements Drawable<Shape> {
+    readonly gl: WebGL2RenderingContext;
     readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;
-    readonly world: mat4;
+    readonly indices = 0;
+    readonly vertices = 0;
+    readonly method: GLenum;
+    readonly type = ShapeType.COLORED;
+    readonly id: number;
     readonly shapes: Shape[];
-    constructor(gl: WebGL2RenderingContext, { id, type, pos, display, visible, shapes }: CompositeProps);
-    [Symbol.iterator](this: any): Generator<any, void, any>;
+    readonly world: mat4;
+    readonly color: never;
+    readonly pick_color: never;
+    readonly depth = 0;
+    display: "inherit" | "fixed" | "hidden";
+    visible: number;
+    hovered: number;
+    focused: number;
+    constructor(gl: WebGL2RenderingContext, { id, pos, display, visible, shapes }: CompositeProps);
+    [Symbol.iterator](this: Composite): Generator<Shape, void, unknown>;
     show(): void;
     hide(): void;
     hoverIn(): void;
@@ -101,5 +118,8 @@ export declare class Node extends Composite {
 }
 export declare class Edge extends Composite {
     constructor(gl: WebGL2RenderingContext, start: Array<number>, end: Array<number>);
+}
+export declare class Logo extends Composite {
+    constructor(gl: WebGL2RenderingContext, depth: number, { id, pos }: CompositeProps);
 }
 export {};

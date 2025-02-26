@@ -1,4 +1,4 @@
-import { AttributeInfo, AttributeObject, UniformObject, TextureInfo, Drawable, Scene, DrawInfo } from "./common.js";
+import { AttributeInfo, AttributeObject, UniformObject, TextureInfo, Drawable, Scene, DrawInfo, TextureObject } from "./common.js";
 /**
  * Utility function to create a WebGL2 shader.
  */
@@ -31,7 +31,7 @@ export declare function createVAO(gl: WebGL2RenderingContext, program: WebGLProg
 /**
  * Utility function to create a texture array buffer from an HTMLImageElement.
  */
-export declare function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: HTMLImageElement, idx: number, width: number, height: number, depth: number): WebGLTexture | undefined;
+export declare function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, width: number, height: number, info: TextureObject): WebGLTexture | undefined;
 export declare class FrameBufferObject {
     readonly buff: WebGLFramebuffer;
     width: number;
@@ -45,10 +45,6 @@ export declare function attachTextureBuffer(gl: WebGL2RenderingContext, fbo: Fra
  * Utility function to create a framebuffer object.
  */
 export declare function createFrameBufferObject(gl: WebGL2RenderingContext, width: number, height: number, type?: GLenum, n?: number, render?: boolean): [boolean, FrameBufferObject | null];
-/**
- * Utility function to resize a framebuffer object.
- */
-export declare function resizeFrameBufferObject(gl: WebGL2RenderingContext, fbo: FrameBufferObject, width: number, height: number): [boolean, FrameBufferObject | null];
 export declare class PluginEvent<T> extends CustomEvent<T> {
     shape: T;
     constructor(type: string, { shape }: {

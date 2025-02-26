@@ -15,13 +15,15 @@ export type UniformObject = {
     type: number,
 };
 
+export type TextureObject = {
+    idx: number,
+    width: number,
+    height: number,
+    depth: number,
+}
+
 export type TextureInfo = {
-    [key: string]: {
-        idx: number,
-        width: number,
-        height: number,
-        depth: number,
-    }
+    [key: string]: TextureObject,
 }
 
 export type DrawInfo<T> = {

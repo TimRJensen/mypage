@@ -107,6 +107,16 @@
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
   "include": [
-    "./app/**/*.ts", "app/static/ts/webgl/shaders/fragment-blend.js",
+    "./app/**/*.ts",
+  ],
+  "overrides": [
+    {
+      "files": ["./app/**/shaders/*.ts"],
+      "compilerOptions": {
+        "sourceMap": false,
+        "declaration": false,
+        "declarationMap": false
+      }
+    }
   ]
 }

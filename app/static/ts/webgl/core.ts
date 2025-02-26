@@ -7,6 +7,7 @@ import {
     Scene,
     DrawInfo,
     setUniform,
+    TextureObject,
 } from "./common.js";
 import quadvs from "./shaders/vertex-quad.js";
 import quadfs from "./shaders/fragment-quad.js";
@@ -155,17 +156,34 @@ export function createVAO(gl: WebGL2RenderingContext, program: WebGLProgram, att
 /**
  * Utility function to create a texture array buffer from an HTMLImageElement.
  */
-export function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: HTMLImageElement, idx: number, width: number, height: number, depth: number) { 
-    const tex = gl.createTexture();
-    if (!tex) {
+export function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, width: number, height: number, info: TextureObject) { 
+    const tex = gl.createTexture(), pbo = gl.createBuffer();
+    if (!tex || !pbo) {
         return undefined;
     }
 
-    gl.activeTexture(gl.TEXTURE0 + idx);
+    gl.activeTexture(gl.TEXTURE0 + info.idx);
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, tex);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA8, width, height, depth, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA8, width, height, info.depth);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, pbo);
+    gl.bufferData(gl.PIXEL_UNPACK_BUFFER, data, gl.STATIC_DRAW);
+    gl.pixelStorei(gl.UNPACK_ROW_LENGTH, width);
+    gl.pixelStorei(gl.UNPACK_IMAGE_HEIGHT, height);
+    for (let i = 0; i < info.depth; i++) {
+        const rowSize = width/info.width;
+        const colSize = height/info.height; 
+        const row = Math.trunc(i/rowSize)*info.width;
+        const col = (i%rowSize)*info.height;
+        console.log(row, col, rowSize, colSize);
+        gl.pixelStorei(gl.UNPACK_SKIP_ROWS, row);
+        gl.pixelStorei(gl.UNPACK_SKIP_PIXELS, col);
+        gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, info.width, info.height, 1, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+    }
+    gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
+    // gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
 
     return tex;
 }
@@ -181,7 +199,14 @@ function loadTexture(gl: WebGL2RenderingContext, texInfo?: TextureInfo) {
     for (const [key, info] of Object.entries(texInfo)) {
         const img = new Image();
         img.onload = () => {
-            createTextureArrayBuffer(gl, img, info.idx, info.width, info.height, info.depth);
+            const {width, height} = img;
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d")!;
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0);
+
+            createTextureArrayBuffer(gl, ctx.getImageData(0, 0, width, height).data.buffer, width, height, info);
         };
         img.src = key
     }
@@ -259,57 +284,6 @@ export function createFrameBufferObject(gl: WebGL2RenderingContext, width: numbe
 
     const fbo = new FrameBufferObject(fb, width, height);
     attachTextureBuffer(gl, fbo, width, height, type, n);
-    return [true, fbo];
-}
-
-/**
- * Utility function to resize a framebuffer object.
- */
-export function resizeFrameBufferObject(
-    gl: WebGL2RenderingContext,
-    fbo: FrameBufferObject,
-    width: number,
-    height: number,
-): [boolean, FrameBufferObject|null] {
-    if (width == fbo.width && height == fbo.height) {
-        return [true, fbo];
-    }
-    fbo.width = width;
-    fbo.height = height;
-
-    for (let i = 0; i < fbo.attachments.length; i++) {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
-
-        let type = 0;
-        switch (gl.getFramebufferAttachmentParameter(
-            gl.FRAMEBUFFER, 
-            gl.COLOR_ATTACHMENT0+i,
-            gl.FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE
-        )) {
-            case gl.INT:
-                type = gl.R16I;
-                break;
-            case gl.UNSIGNED_NORMALIZED:
-                type = gl.RGBA8;
-                break;
-            default:
-                console.error("Unknown framebuffer attachment type", type);
-                return [false, null];
-        }
-
-        gl.deleteTexture(fbo.attachments[i]);        
-        attachTextureBuffer(gl, fbo, width, height, type, i);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
-
-    if (!fbo.depth) {
-        return [true, fbo];
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
-    gl.deleteRenderbuffer(fbo.depth);
-    attachDepthBuffer(gl, fbo, width, height);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
     return [true, fbo];
 }
 
@@ -474,13 +448,6 @@ export class Program<T extends Drawable<T>> {
         Program.lastTime = time;
 
         const {gl, uniforms, drawInfo, fbo} = this;
-
-
-        // Resize framebuffer
-        // const [ok, fbo] = resizeFrameBufferObject(gl, this.fbo!, canvas.width, canvas.height);
-        // if (!ok) {
-        //     return;
-        // }
         
         // Clear canvas.
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo!.buff);

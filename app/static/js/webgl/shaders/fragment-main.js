@@ -15,14 +15,30 @@ uniform int u_id;
 uniform int u_picked[6];
 uniform vec3 u_color;
 uniform vec3 u_pick_color;
+uniform sampler2DArray u_sampler;
+uniform int u_depth;
 
 void main() {
+    if ((u_type&0x1) == 0x1) {
+        f_color = texture(u_sampler, vec3(v_uv, float(u_depth)));
+        f_threshold = vec4(0.0, 0.0, 0.0, 0.0);
+        f_id = u_id;
+        return;
+    }
+
     vec3 color = u_color/255.0;
     vec3 threshold = vec3(0.0, 0.0, 0.0);
 
-    if ((u_type&0x6) == 0x6) {
+    if ((u_type&0x8) == 0x8) {
+        f_color = vec4(1.0, 0.0, 0.0, 0.0);
+        f_threshold = vec4(threshold, 0.0);
+        f_id = u_id;
+        return;
+    }
+
+    if ((u_type&0x10) == 0x10) {
         f_color = vec4(color, 0.2);
-        f_threshold = vec4(threshold, 1.0);
+        f_threshold = vec4(threshold, 0.0);
         f_id = u_id;
         return;
     }
@@ -42,4 +58,4 @@ void main() {
     f_threshold = vec4(threshold, 1.0);
     f_id = u_id;
 }`;
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiZnJhZ21lbnQtbWFpbi5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uLy4uL3RzL3dlYmdsL3NoYWRlcnMvZnJhZ21lbnQtbWFpbi50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFBQSxlQUFlOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0VBMkNiLENBQUMifQ==
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiZnJhZ21lbnQtbWFpbi5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uLy4uL3RzL3dlYmdsL3NoYWRlcnMvZnJhZ21lbnQtbWFpbi50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFBQSxlQUFlOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztFQTJEYixDQUFDIn0=

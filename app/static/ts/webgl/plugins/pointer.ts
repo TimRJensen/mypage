@@ -73,26 +73,20 @@ function handler(gl: WebGL2RenderingContext, program: Program<Shape>, shapes: Ar
 }
 
 export class PointerPlugin implements PluginLike {
-    protected gl: WebGL2RenderingContext = null!;
     protected n = 0;
 
     constructor(
-        protected canvas: HTMLCanvasElement,
+        protected gl: WebGL2RenderingContext,
         protected shapes: Array<Shape>,
         program: Program<Shape>,
     ) {
-        const gl = canvas.getContext("webgl2");
-        if (!gl) {
-            console.error("WebGL2 not supported");
-            return;
-        }
-
         // Extend the framebuffer object
         const n = program.fbo.attachments.length;
         attachTextureBuffer(gl, program.fbo, program.fbo.width, program.fbo.height, gl.R16I, n);
-        
-        canvas.addEventListener("pointermove", handler(gl, program, shapes) as EventListener);
-        canvas.addEventListener("pointerdown", handler(gl, program, shapes) as EventListener);
+
+        // Attach event listeners
+        program.canvas.addEventListener("pointermove", handler(gl, program, shapes) as EventListener);
+        program.canvas.addEventListener("pointerdown", handler(gl, program, shapes) as EventListener);
 
         this.gl = gl;
         this.n = n;

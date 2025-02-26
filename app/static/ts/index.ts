@@ -2,7 +2,7 @@ import {mat4, vec3} from "./linalg.js";
 import {Program} from "./webgl/core.js";
 import {PointerPlugin, PointerPluginEvent} from "./webgl/plugins/pointer.js";
 import {BloomPlugin} from "./webgl/plugins/bloom.js";
-import {Grid, Composite, RootNode, Node, Edge} from "./webgl/geometry.js";
+import {Grid, Composite, RootNode, Node, Edge, Logo} from "./webgl/geometry.js";
 import vs from "./webgl/shaders/vertex-main.js";
 import fs from "./webgl/shaders/fragment-main.js";
 
@@ -30,32 +30,35 @@ import fs from "./webgl/shaders/fragment-main.js";
     // Shapes
     const shapes = [
         // Grid
-        new Grid(gl, 2, 1, 14, {id: 0, display: "fixed", color: [160, 117, 206]}),
+        new Grid(gl, 1.5, 1.5, 7, {id: 0, color: [160, 117, 206]}),
         // Root
-        new RootNode(gl, {id: 1, pos: [0.0714, 0.0, -0.798]}),
-        new Composite(gl, {id: 2, pos: [-0.357, 0.0, -0.5125], shapes: [
-            new Node(gl, {}),
-            new Edge(gl, [-0.357, 0.06, -0.5125], [0.0714, 0.06, -0.798]),
+        new Composite(gl, {id: 1, pos: [0.0, 0.0, -0.728], shapes: [
+            new RootNode(gl, {}),
         ]}),
-        new Composite(gl, {id: 3, pos: [0.5, 0.0, -0.5125], shapes: [
+        new Composite(gl, {id: 2, pos: [-0.4287, 0.0, -0.4422], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.5, 0.06, -0.5125], [0.0714, 0.06, -0.798]),
+            new Edge(gl, [-0.4287, 0.06, -0.4422], [0.0, 0.06, -0.728]),
         ]}),
-        new Composite(gl, {id: 0x40, pos: [0.0714, 0.0, -0.2268], shapes: [
+        new Composite(gl, {id: 3, pos: [0.4287, 0.0, -0.4422], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.0714, 0.06, -0.2268], [0.0714, 0.06, -0.798]),
+            new Edge(gl, [0.4287, 0.06, -0.4422], [0.0, 0.06, -0.728]),
         ]}),
-        new Composite(gl, {id: 0x41, pos: [-0.5, 0.0, 0.2018], shapes: [
+        new Composite(gl, {id: 0x40, pos: [0.0, 0.0, -0.1564], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [-0.5, 0.06, 0.2018], [0.0714, 0.06, -0.2268]),
+            new Edge(gl, [0.0, 0.06, -0.1564], [0.0, 0.06, -0.728]),
         ]}),
-        new Composite(gl, {id: 0x42, pos: [0.0714, 0.0, 0.3446], shapes: [
+        new Composite(gl, {id: 0x41, pos: [-0.5716, 0.0, 0.2723], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.0714, 0.06, 0.3446], [0.0714, 0.06, -0.2268]),
+            new Edge(gl, [-0.5716, 0.06, 0.2723], [0.0, 0.06, -0.1564]),
+            new Logo(gl, 7, {id: 8, pos: [-0.5, 0.0, 2*0.2018]}),
         ]}),
-        new Composite(gl, {id: 0x43, pos: [0.6429, 0.00, 0.2018], shapes: [
+        new Composite(gl, {id: 0x42, pos: [0.0, 0.0, 0.5581], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.6429, 0.06, 0.2018], [0.0714, 0.06, -0.2268]),
+            new Edge(gl, [0.0, 0.06, 0.5581], [0.0, 0.06, -0.1564]),
+        ]}),
+        new Composite(gl, {id: 0x43, pos: [0.5716, 0.00, 0.2723], shapes: [
+            new Node(gl, {}),
+            new Edge(gl, [0.5716, 0.06, 0.2723], [0.0, 0.06, -0.1564]),
         ]}),
     ];
     // Breadcumbs
@@ -71,7 +74,6 @@ import fs from "./webgl/shaders/fragment-main.js";
     ])
     
     // Viewprojection matrix
-    // https://webgl2fundamentals.org/webgl/lessons/webgl-3d-perspective.html
     const cam = new vec3(0.2, 0.4, -1.45);
     const center = new vec3(0, 0, 0);
     const vpm = mat4
@@ -87,29 +89,35 @@ import fs from "./webgl/shaders/fragment-main.js";
             a_normal: {type: WebGL2RenderingContext.FLOAT, len: 3, stride: 32, size: 4},
         },
         textures: {
-            // "/static/imgs/logos.png": {
-            //     idx: 0,
-            //     width: 128,
-            //     height: 128,
-            //     depth: 21,
-            // },
+            "/static/imgs/atlas-logos.png": {
+                idx: 0,
+                width: 256,
+                height: 256,
+                depth: 18,
+            },
         },
     });
     main.plugins.push(
-        new BloomPlugin(canvas, shapes, main),
-        new PointerPlugin(canvas, shapes, main),
+        new BloomPlugin(gl, shapes, main),
+        new PointerPlugin(gl, shapes, main),
     );
 
     main.render({
         u_vpm: vpm,
-        u_light_dir: new vec3(0.6, 1.0, 2.5).normalize(),
+        u_light_dir: new vec3(0.6, 1.0, 2.0).normalize(),
         u_picked: new Int32Array([-1, -1, -1, -1, -1, -1]),
         u_type: (shape) => shape.type,
         u_id: (shape) => shape.id,
         u_model: (shape) => shape.world,
-        u_inverse_transpose: (shape) => shape.world.inverse().transpose(),
         u_color: (shape) => shape.color,
         u_pick_color: (shape) => shape.pick_color,
+        u_sampler: (shape) => {
+            switch (shape.type) {
+                default:
+                    return 0;
+            }
+        },
+        u_depth: (shape) => shape.depth,
     });
 
     // Handle drag
@@ -179,6 +187,7 @@ import fs from "./webgl/shaders/fragment-main.js";
     );
 
     // Handle pick (click)
+    // picked[0] == root, picked[3] == focused
     const picked = main.drawInfo.u_picked as Int32Array;
     const trgXZ = [0, 0];
     const duration = 1000;
@@ -194,7 +203,6 @@ import fs from "./webgl/shaders/fragment-main.js";
     function animateCamera() {
         if (progress >= 1.0 || dragging) {
             progress = 0;
-            console.log("done");
             return;
         }
         progress += step;
@@ -247,7 +255,7 @@ import fs from "./webgl/shaders/fragment-main.js";
         e.shape.show();
 
         const dir = new vec3(e.shape.world[12] - cam.x, 0, e.shape.world[14] - cam.z).normalize();
-        trgXZ[0] = e.shape.world[12] + dir.x*-0.1;
+        trgXZ[0] = e.shape.world[12] + dir.x*-0.225;
         trgXZ[1] = e.shape.world[14] + dir.z*-0.75;
         dragging = false;
         requestAnimationFrame(animateCamera);
@@ -256,7 +264,7 @@ import fs from "./webgl/shaders/fragment-main.js";
     // Handle pick (hover)
     main.on("pointermove", (e: PointerPluginEvent) => {
         if (e.id == 0) {
-            picked[0] = shapes[1].isFocused() ? 1 : -1, picked[1] = -1, picked[2] = -1;
+            picked[0] = picked[3] > 0 ? 1 : -1, picked[1] = -1, picked[2] = -1;
             for (const shape of shapes) {
                 shape.hoverOut();
                 shape.hide();
@@ -286,14 +294,15 @@ import fs from "./webgl/shaders/fragment-main.js";
         breadcrumbs.textContent = "";
         let a = "", b = "";
 
-        for (const shape of shapes.slice(2)) {
-            if (shape.isFocused()) {
+        // focused
+        for (const shape of shapes) {
+            if (picked.slice(3).includes(shape.id)) {
                 a += " \u21FE " + msgs.get(shape.id);
             }
         }
-
+        // hovered
         for (const shape of shapes) {
-            if (shape.isHovered()) {
+            if (picked.slice(1, 3).includes(shape.id)) {
                 b += " \u21FE " + msgs.get(shape.id);
             }
         }
@@ -307,10 +316,9 @@ import fs from "./webgl/shaders/fragment-main.js";
         picked[0] = -1, picked[1] = -1, picked[2] = -1;
         picked[3] = -1, picked[4] = -1, picked[5] = -1;
         for (const shape of shapes) {
-            if (shape.isFocused()) {
-                shape.blur();
-                shape.hide();
-            }
+            shape.hoverOut();
+            shape.blur();
+            shape.hide();
         }
 
         // Rest camera
@@ -319,4 +327,18 @@ import fs from "./webgl/shaders/fragment-main.js";
         dragging = false;
         requestAnimationFrame(animateCamera);
     });
+
+
+    function force() {
+        shapes[4].show();
+        shapes[4].focus();
+        shapes[5].show();
+        shapes[5].focus();
+        picked[0] = 1, picked[3] = 0x40, picked[4] = 0x41, picked[5] = -1;
+        trgXZ[0] = -0.5-0.225;
+        trgXZ[1] = 0.2018-0.75;
+        dragging = false;
+        requestAnimationFrame(animateCamera);
+    }
+    // force();
 }())

@@ -10,5 +10,5 @@ uniform sampler2D u_blur;
 void main() {
     vec3 scene = texture(u_scene, v_texcoord).rgb;
     vec3 blur = texture(u_blur, v_texcoord).rgb;
-    f_color = vec4(scene + blur*1.5, 1.0);
+    f_color =  vec4(scene + blur*1.75, 1.0);
 }`;

@@ -11,11 +11,10 @@ export declare class PointerPluginEvent extends PluginEvent<Shape> {
 }
 export type PointerPluginHandler = PluginEventHandler<Shape, PointerPluginEvent>;
 export declare class PointerPlugin implements PluginLike {
-    protected canvas: HTMLCanvasElement;
-    protected shapes: Array<Shape>;
     protected gl: WebGL2RenderingContext;
+    protected shapes: Array<Shape>;
     protected n: number;
-    constructor(canvas: HTMLCanvasElement, shapes: Array<Shape>, program: Program<Shape>);
+    constructor(gl: WebGL2RenderingContext, shapes: Array<Shape>, program: Program<Shape>);
     before(gl: WebGL2RenderingContext, fbo: FrameBufferObject): void;
     after(): void;
 }
