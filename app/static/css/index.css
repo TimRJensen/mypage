@@ -213,7 +213,12 @@ button svg {
 #canvas-box .info {
     position: absolute;
     display: none;
-    width: fit-content;
-    height: fit-content;
-    background-color: white;
+    height: 33%;
+    aspect-ratio: 3/4;
+    border-radius: 25px;
+    border: solid calc(1rem*0.25) #9765CD;
+    background-color: rebeccapurple;
+    color: #FFF;
+    padding: 20px 10px;
+    transform: translate(0, -100%);
 }

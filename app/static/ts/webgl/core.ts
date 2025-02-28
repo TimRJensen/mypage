@@ -173,11 +173,9 @@ export function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: Array
     gl.pixelStorei(gl.UNPACK_ROW_LENGTH, width);
     gl.pixelStorei(gl.UNPACK_IMAGE_HEIGHT, height);
     for (let i = 0; i < info.depth; i++) {
-        const rowSize = width/info.width;
-        const colSize = height/info.height; 
-        const row = Math.trunc(i/rowSize)*info.width;
-        const col = (i%rowSize)*info.height;
-        console.log(row, col, rowSize, colSize);
+        const size = width/info.width;
+        const row = Math.trunc(i/size)*info.width;
+        const col = (i%size)*info.height;
         gl.pixelStorei(gl.UNPACK_SKIP_ROWS, row);
         gl.pixelStorei(gl.UNPACK_SKIP_PIXELS, col);
         gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, info.width, info.height, 1, gl.RGBA, gl.UNSIGNED_BYTE, 0);

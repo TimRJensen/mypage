@@ -290,7 +290,7 @@ export class Circle extends Shape {
             display = "inherit",
         }: ShapeProps,
     ) {
-        super(gl, gl.TRIANGLE_STRIP, id, type, Circle.data, {pos, color, pick_color, display});
+        super(gl, gl.TRIANGLE_STRIP, 0, type, Circle.data, {pos, color, pick_color, display});
 
         this.world = new mat4([
             1, 0, 0, 0,
@@ -490,11 +490,7 @@ export class Composite implements Drawable<Shape> {
         this.id = id;
         this.shapes = shapes;
         for (const shape of this) {
-            if (shape.id != -1) {
-                continue;
-            }
-
-            if (this.id != -1) {
+            if (shape.id == -1) {
                 // Hijack the id.
                 Reflect.set(shape, "id", id);
             }

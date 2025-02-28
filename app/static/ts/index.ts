@@ -30,32 +30,39 @@ import fs from "./webgl/shaders/fragment-main.js";
     // Shapes
     const shapes = [
         // Grid
-        new Grid(gl, 1.5, 1.5, 7, {id: 0, color: [160, 117, 206]}),
+        new Grid(gl, 1.5, 1.5, 7, {id: 0, color: [151, 101, 205]}),
         // Root
         new Composite(gl, {id: 1, pos: [0.0, 0.0, -0.728], shapes: [
             new RootNode(gl, {}),
         ]}),
+        // Personal skills
         new Composite(gl, {id: 2, pos: [-0.4287, 0.0, -0.4422], shapes: [
             new Node(gl, {}),
             new Edge(gl, [-0.4287, 0.06, -0.4422], [0.0, 0.06, -0.728]),
         ]}),
+        // Projects
         new Composite(gl, {id: 3, pos: [0.4287, 0.0, -0.4422], shapes: [
             new Node(gl, {}),
             new Edge(gl, [0.4287, 0.06, -0.4422], [0.0, 0.06, -0.728]),
         ]}),
+        // Technical skills
         new Composite(gl, {id: 0x40, pos: [0.0, 0.0, -0.1564], shapes: [
             new Node(gl, {}),
             new Edge(gl, [0.0, 0.06, -0.1564], [0.0, 0.06, -0.728]),
         ]}),
+        // Backend
         new Composite(gl, {id: 0x41, pos: [-0.5716, 0.0, 0.2723], shapes: [
             new Node(gl, {}),
             new Edge(gl, [-0.5716, 0.06, 0.2723], [0.0, 0.06, -0.1564]),
-            new Logo(gl, 7, {id: 8, pos: [-0.5, 0.0, 2*0.2018]}),
+            new Logo(gl, 0, {id: 0x400, pos: [0.1, 0.0, 0.2]}),
+            new Logo(gl, 7, {id: 0x401, pos: [-0.2, 0.0, 0]}),
         ]}),
+        // Frontend
         new Composite(gl, {id: 0x42, pos: [0.0, 0.0, 0.5581], shapes: [
             new Node(gl, {}),
             new Edge(gl, [0.0, 0.06, 0.5581], [0.0, 0.06, -0.1564]),
         ]}),
+        // All purpose
         new Composite(gl, {id: 0x43, pos: [0.5716, 0.00, 0.2723], shapes: [
             new Node(gl, {}),
             new Edge(gl, [0.5716, 0.06, 0.2723], [0.0, 0.06, -0.1564]),
@@ -76,9 +83,9 @@ import fs from "./webgl/shaders/fragment-main.js";
     // Viewprojection matrix
     const cam = new vec3(0.2, 0.4, -1.45);
     const center = new vec3(0, 0, 0);
-    const vpm = mat4
-        .perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 5)
-        .mul(mat4.lookAt(cam, center, new vec3(0, 1, 0)));
+    const up = new vec3(0, 1, 0);
+    const pm = mat4.perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 5)
+    const vpm = pm.mul(mat4.lookAt(cam, center, up));
 
     // Create the WebGL program.
     const main = new Program(canvas, shapes, vs, fs, {
@@ -140,13 +147,7 @@ import fs from "./webgl/shaders/fragment-main.js";
             center.z += dz;
         }
 
-        main.drawInfo.u_vpm = mat4
-            .perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 1000)
-            .mul(mat4.lookAt(
-                cam,
-                center,
-                new vec3(0, 1, 0)
-            ));
+        main.drawInfo.u_vpm = pm.mul(mat4.lookAt(cam, center, up));
     },
         {passive: false}
     );
@@ -187,7 +188,7 @@ import fs from "./webgl/shaders/fragment-main.js";
     );
 
     // Handle pick (click)
-    // picked[0] == root, picked[3] == focused
+    // picked[0] == root, picked[1 < i < 3] == hovered, picked[i >= 3] == focused
     const picked = main.drawInfo.u_picked as Int32Array;
     const trgXZ = [0, 0];
     const duration = 1000;
@@ -213,19 +214,28 @@ import fs from "./webgl/shaders/fragment-main.js";
         cam[2] = lerp(cam[2], trgXZ[1], alpha);
         center[0] = cam[0] + offsetXZ[0];
         center[2] = cam[2] + offsetXZ[1];
-    
-        main.drawInfo.u_vpm = mat4
-        .perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 1000)
-        .mul(mat4.lookAt(
-            cam,
-            center,
-            new vec3(0, 1, 0)
-        ));
+        main.drawInfo.u_vpm = pm.mul(mat4.lookAt(cam, center, up));
+
         requestAnimationFrame(animateCamera);
+    }
+
+    const panel = document.querySelector<HTMLDivElement>("#canvas-box .info")!;
+    function setInfoPanel(x: number, y: number, txt: string) {
+        if (x < 0 || y < 0) {
+            panel.style.display = "none";
+            return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        panel.style.display = "block";
+        panel.style.left = rect.left + x*rect.width + "px";
+        panel.style.top = rect.top + y*rect.height + "px";
+        panel.textContent = txt;
     }
 
     main.on("pointerdown", (e: PointerPluginEvent) => {
         if (e.id == 0) {
+            panel.style.display = "none";
             picked[0] = -1, picked[3] = -1, picked[4] = -1, picked[5] = -1;
             for (const shape of shapes) {
                 shape.blur();
@@ -234,21 +244,32 @@ import fs from "./webgl/shaders/fragment-main.js";
             return;
         }
 
-        for (const shape of shapes) {
-            shape.blur();
-            shape.hide();
+        switch (true) {
+            case (e.shape.id&0x400) == 0x400:
+                const clip = pm.mul(mat4.lookAt(cam, center, up)).mul(e.shape.world)
+                const x = (clip[12]/clip[15])*0.5 + 0.5;
+                const y = (clip[13]/clip[15])*-0.5 + 0.5;
+                setInfoPanel(x, y, e.id.toString());
+                return;
+            default:
+                setInfoPanel(-1, -1, "");
+                for (const shape of shapes) {
+                    shape.blur();
+                    shape.hide();
+                }
         }
 
         switch (true) {
             case (e.shape.id&0x40) == 0x40:
                 picked[0] = 1, picked[3] = 0x40, picked[4] = e.id, picked[5] = -1;
                 shapes[1].focus();
-                shapes[4].focus();
                 shapes[4].show();
+                shapes[4].focus();
                 break;
             default: {
                 picked[0] = 1, picked[3] = e.id, picked[4] = -1, picked[5] = -1;
                 shapes[1].focus();
+
             }
         }
         e.shape.focus();
@@ -273,6 +294,8 @@ import fs from "./webgl/shaders/fragment-main.js";
         }
         
         switch (true) {
+            case (e.shape.id&0x400) == 0x400:
+                return;
             case (e.shape.id&0x40) == 0x40:
                 picked[0] = 1, picked[1] = 0x40, picked[2] = e.id;
                 e.shape.show();
@@ -313,6 +336,7 @@ import fs from "./webgl/shaders/fragment-main.js";
     // Handle recenter
     document.querySelector("#canvas-box #center")!.addEventListener("pointerdown", () => {
         // Reset pick
+        panel.style.display = "none";
         picked[0] = -1, picked[1] = -1, picked[2] = -1;
         picked[3] = -1, picked[4] = -1, picked[5] = -1;
         for (const shape of shapes) {
