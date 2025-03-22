@@ -17,14 +17,14 @@ var (
 	fields = map[string]int{"v": 0, "vt": 1, "vn": 2}
 )
 
-func parser(file string) ([]float32, []int32) {
+func parser(file string) ([]float32, []int16) {
 	f, _ := os.Open(file)
 	defer f.Close()
 
 	parsed := make([][]float32, 3)
-	cache := make(map[string]int32)
+	cache := make(map[string]int16)
 	vertices := make([]float32, 0)
-	indices := make([]int32, 0)
+	indices := make([]int16, 0)
 
 	reader := bufio.NewScanner(f)
 	reader.Split(bufio.ScanLines)
@@ -46,7 +46,7 @@ func parser(file string) ([]float32, []int32) {
 					indices = append(indices, cache[chunck])
 					continue
 				}
-				cache[chunck] = int32(len(cache))
+				cache[chunck] = int16(len(cache))
 				indices = append(indices, cache[chunck])
 
 				for i, idx := range chunks {

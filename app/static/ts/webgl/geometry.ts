@@ -99,7 +99,7 @@ export class Shape  {
                 if (!vOK) {
                     throw new Error("Failed to create vertex buffer.");
                 }
-                const iView = view.buffer.slice(n);
+                const iView = new Uint16Array(view.buffer, n, (view.byteLength - n) / 2);
                 const [iOK, iBuff] = createStaticBuffer(gl, iView, gl.ELEMENT_ARRAY_BUFFER);
                 if (!iOK) {
                     throw new Error("Failed to create index buffer.");
@@ -114,7 +114,7 @@ export class Shape  {
             // @ts-ignore
             this.vertices = n/Float32Array.BYTES_PER_ELEMENT;
             // @ts-ignore
-            this.indices = (view.byteLength - (n + 4))/Uint32Array.BYTES_PER_ELEMENT;
+            this.indices = (view.byteLength - (n + 4))/Uint16Array.BYTES_PER_ELEMENT;
 
             return cache.get(this.constructor.name)!;
         });
@@ -181,7 +181,7 @@ export class Shape  {
         }
 
         if (this.indices > 0) {
-            gl.drawElements(this.method, this.indices, gl.UNSIGNED_INT, offset*4);
+            gl.drawElements(this.method, this.indices, gl.UNSIGNED_SHORT, offset*Uint16Array.BYTES_PER_ELEMENT*2);
         }
     }
 }
@@ -201,7 +201,7 @@ export class Grid extends Shape {
     ) {
         const data = new Promise<ArrayBuffer>(resolve => {
             const data = createGrid(xmax, ymax, step);
-            const indices = new Uint32Array(data.byteLength/4);
+            const indices = new Uint16Array(data.byteLength/32);
             for (let i = 0; i < indices.length; i++) {
                 indices[i] = i;
             }
@@ -213,7 +213,7 @@ export class Grid extends Shape {
             const vView = new Float32Array(buff, 4, data.byteLength/Float32Array.BYTES_PER_ELEMENT);
             vView.set(new Float32Array(data));
             
-            const iView = new Uint32Array(buff, 4 + data.byteLength, indices.length);
+            const iView = new Uint16Array(buff, 4 + data.byteLength, indices.length);
             iView.set(indices);
             
             resolve(buff);
@@ -236,9 +236,7 @@ export class Sphere extends Shape {
             display = "inherit",
         }: ShapeProps
     ) {
-        
         super(gl, gl.TRIANGLES, id, type, Sphere.data,  {pos, color, pick_color, display});
-
         this.world = new mat4([
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -258,7 +256,7 @@ export class Root extends Shape {
         {
             id = -1, type = ShapeType.COLORED,
             pos = [0, 0, 0],
-            scale = [1, 1, 1],
+            scale = [0.075, 0.125, 0.075],
             color = WHITE, pick_color = WHITE,
             display = "inherit",
         }: ShapeProps
@@ -271,8 +269,8 @@ export class Root extends Shape {
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
         ])
-            .rotateX(-Math.PI/1.5)
-            .scale(0.075, 0.125, 0.075);
+        .rotateX(-Math.PI/1.5)
+        .scale(scale[0], scale[1], scale[2]);
     }
 }
 
@@ -290,14 +288,15 @@ export class Circle extends Shape {
             display = "inherit",
         }: ShapeProps,
     ) {
-        super(gl, gl.TRIANGLE_STRIP, 0, type, Circle.data, {pos, color, pick_color, display});
+        super(gl, gl.TRIANGLE_STRIP, id, type, Circle.data, {pos, color, pick_color, display});
 
         this.world = new mat4([
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
-        ]).scale(scale[0], scale[1], scale[2]);
+        ])
+        .scale(scale[0], scale[1], scale[2]);
     }
 }
 
@@ -324,8 +323,8 @@ export class Background extends Circle {
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
         ])
-            .rotateX(-Math.PI/1.5)
-            .scale(scale[0]+0.15, scale[1]+0.15, scale[2]+0.15);
+        .rotateX(-Math.PI/1.5)
+        .scale(scale[0]+0.15, scale[1]+0.15, scale[2]+0.15);
     }
 }
 
@@ -453,8 +452,7 @@ export class Composite implements Drawable<Shape> {
 
                     const vView = new Float32Array(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/4);
                     gl.getBufferSubData(gl.ARRAY_BUFFER, 0, vView, 0);
-
-                    const iView = new Int32Array(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/4);
+                    const iView = new Uint16Array(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/2);
                     gl.getBufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, iView, 0);
                     for (let i = 0; i < iView.length; i++) {
                         iView[i] += offset[0]/(8*4);
@@ -480,7 +478,7 @@ export class Composite implements Drawable<Shape> {
             // @ts-ignore
             this.vertices = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/Float32Array.BYTES_PER_ELEMENT;
             // @ts-ignore
-            this.indices = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/Uint32Array.BYTES_PER_ELEMENT;
+            this.indices = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/Uint16Array.BYTES_PER_ELEMENT;
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
@@ -565,11 +563,7 @@ export class Composite implements Drawable<Shape> {
 
         for (const shape of this.shapes) {
             shape.draw(gl, map, drawInfo, offset);
-            if (shape.indices > 0) {
-                offset += shape.indices;
-            } else {
-                offset += shape.vertices;
-            }
+            offset += shape.indices > 0 ? shape.indices : shape.vertices;
         }
     }
 }

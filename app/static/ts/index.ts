@@ -5,6 +5,7 @@ import {BloomPlugin} from "./webgl/plugins/bloom.js";
 import {Grid, Composite, RootNode, Node, Edge, Logo} from "./webgl/geometry.js";
 import vs from "./webgl/shaders/vertex-main.js";
 import fs from "./webgl/shaders/fragment-main.js";
+import hints from "./hints.js";
 
 /**
  * Handle transition
@@ -36,36 +37,52 @@ import fs from "./webgl/shaders/fragment-main.js";
             new RootNode(gl, {}),
         ]}),
         // Personal skills
-        new Composite(gl, {id: 2, pos: [-0.4287, 0.0, -0.4422], shapes: [
+        new Composite(gl, {id: 2, pos: [-0.4286, 0.0, -0.4411], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [-0.4287, 0.06, -0.4422], [0.0, 0.06, -0.728]),
+            new Edge(gl, [-0.4286, 0.06, -0.4411], [0.0, 0.06, -0.728]),
         ]}),
         // Projects
-        new Composite(gl, {id: 3, pos: [0.4287, 0.0, -0.4422], shapes: [
+        new Composite(gl, {id: 3, pos: [0.4286, 0.0, -0.4411], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.4287, 0.06, -0.4422], [0.0, 0.06, -0.728]),
+            new Edge(gl, [0.4286, 0.06, -0.4411], [0.0, 0.06, -0.728]),
         ]}),
         // Technical skills
-        new Composite(gl, {id: 0x40, pos: [0.0, 0.0, -0.1564], shapes: [
+        new Composite(gl, {id: 0x40, pos: [0.0, 0.0, -0.1554], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.0, 0.06, -0.1564], [0.0, 0.06, -0.728]),
+            new Edge(gl, [0.0, 0.06, -0.1554], [0.0, 0.06, -0.728]),
         ]}),
         // Backend
-        new Composite(gl, {id: 0x41, pos: [-0.5716, 0.0, 0.2723], shapes: [
+        new Composite(gl, {id: 0x41, pos: [-0.5714, 0.0, 0.2732], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [-0.5716, 0.06, 0.2723], [0.0, 0.06, -0.1564]),
-            new Logo(gl, 0, {id: 0x400, pos: [0.1, 0.0, 0.2]}),
-            new Logo(gl, 7, {id: 0x401, pos: [-0.2, 0.0, 0]}),
+            new Edge(gl, [-0.5714, 0.06, 0.2732], [0.0, 0.06, -0.1564]),
+            new Logo(gl, 11, {id: 0x410, pos: [0.2331, 0.0, 0.4038]}),
+            new Logo(gl, 3, {id: 0x411, pos: [0.0809, 0.0, 0.4591]}),
+            new Logo(gl, 10, {id: 0x412, pos: [-0.0810, 0.0, 0.4591]}),
+            new Logo(gl, 12, {id: 0x413, pos: [-0.2331, 0.0, 0.4037]}),
+            new Logo(gl, 4, {id: 0x414, pos: [-0.3571, 0.0, 0.2997]}),
+            new Logo(gl, 6, {id: 0x415, pos: [-0.4381, 0.0, 0.1595]}),
         ]}),
         // Frontend
-        new Composite(gl, {id: 0x42, pos: [0.0, 0.0, 0.5581], shapes: [
+        new Composite(gl, {id: 0x42, pos: [0.0, 0.0, 0.5589], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.0, 0.06, 0.5581], [0.0, 0.06, -0.1564]),
+            new Edge(gl, [0.0, 0.06, 0.5589], [0.0, 0.06, -0.1564]),
+            new Logo(gl, 9, {id: 0x420, pos: [0.4381, 0.0, 0.1595]}),
+            new Logo(gl, 15, {id: 0x421, pos: [0.3391, 0.0, 0.3199]}),
+            new Logo(gl, 14, {id: 0x422, pos: [0.1846, 0.0, 0.4281]}),
+            new Logo(gl, 16, {id: 0x423, pos: [0.0000, 0.0, 0.4662]}),
+            new Logo(gl, 8, {id: 0x424, pos: [-0.1846, 0.0, 0.4281]}),
+            new Logo(gl, 2, {id: 0x425, pos: [-0.3391, 0.0, 0.3199]}),
+            new Logo(gl, 17, {id: 0x426, pos: [-0.4381, 0.0, 0.1595]}),
         ]}),
         // All purpose
-        new Composite(gl, {id: 0x43, pos: [0.5716, 0.00, 0.2723], shapes: [
+        new Composite(gl, {id: 0x43, pos: [0.5714, 0.00, 0.2732], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.5716, 0.06, 0.2723], [0.0, 0.06, -0.1564]),
+            new Edge(gl, [0.5714, 0.06, 0.2732], [0.0, 0.06, -0.1564]),
+            new Logo(gl, 0, {id: 0x430, pos: [-0.2331, 0.0, 0.4038]}),
+            new Logo(gl, 1, {id: 0x431, pos: [-0.0406, 0.0, 0.4644]}),
+            new Logo(gl, 5, {id: 0x432, pos: [0.1595, 0.0, 0.4381]}),
+            new Logo(gl, 13, {id: 0x433, pos: [0.3297, 0.0, 0.3297]}),
+            new Logo(gl, 7, {id: 0x434, pos: [0.4381, 0.0, 0.1595]}),
         ]}),
     ];
     // Breadcumbs
@@ -79,12 +96,12 @@ import fs from "./webgl/shaders/fragment-main.js";
         [0x42, "frontend"],
         [0x43, "all purpose"],
     ])
-    
+    console.log("Max Elements Indices:", window.outerWidth, window.outerHeight);
     // Viewprojection matrix
     const cam = new vec3(0.2, 0.4, -1.45);
     const center = new vec3(0, 0, 0);
     const up = new vec3(0, 1, 0);
-    const pm = mat4.perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 5)
+    const pm = mat4.perspective(Math.PI/4, 1920/1080, 0.1, 50)
     const vpm = pm.mul(mat4.lookAt(cam, center, up));
 
     // Create the WebGL program.
@@ -219,18 +236,24 @@ import fs from "./webgl/shaders/fragment-main.js";
         requestAnimationFrame(animateCamera);
     }
 
-    const panel = document.querySelector<HTMLDivElement>("#canvas-box .info")!;
-    function setInfoPanel(x: number, y: number, txt: string) {
-        if (x < 0 || y < 0) {
+    const panel = document.querySelector<HTMLDivElement>("#canvas-box .info-box")!;
+    function setInfoPanel(cx: number, cy: number, id: number) {
+        if (id < 0) {
             panel.style.display = "none";
             return;
         }
 
         const rect = canvas.getBoundingClientRect();
-        panel.style.display = "block";
+        const x = cx*0.5 + 0.5;
+        const y = cy*-0.5 + 0.5;
+        panel.style.display = "flex";
         panel.style.left = rect.left + x*rect.width + "px";
         panel.style.top = rect.top + y*rect.height + "px";
-        panel.textContent = txt;
+        panel.firstElementChild!.textContent = hints[id].txt;
+
+        for (let i = 0; i < panel.lastElementChild!.children.length; i++) {
+            (panel.lastElementChild!.children[i] as HTMLElement).dataset.toggled = i < hints[id].rating ? "1" : "0";
+        }
     }
 
     main.on("pointerdown", (e: PointerPluginEvent) => {
@@ -247,12 +270,10 @@ import fs from "./webgl/shaders/fragment-main.js";
         switch (true) {
             case (e.shape.id&0x400) == 0x400:
                 const clip = pm.mul(mat4.lookAt(cam, center, up)).mul(e.shape.world)
-                const x = (clip[12]/clip[15])*0.5 + 0.5;
-                const y = (clip[13]/clip[15])*-0.5 + 0.5;
-                setInfoPanel(x, y, e.id.toString());
+                setInfoPanel(clip[12]/clip[15], clip[13]/clip[15], e.id);
                 return;
             default:
-                setInfoPanel(-1, -1, "");
+                setInfoPanel(0, 0, -1);
                 for (const shape of shapes) {
                     shape.blur();
                     shape.hide();
@@ -275,9 +296,8 @@ import fs from "./webgl/shaders/fragment-main.js";
         e.shape.focus();
         e.shape.show();
 
-        const dir = new vec3(e.shape.world[12] - cam.x, 0, e.shape.world[14] - cam.z).normalize();
-        trgXZ[0] = e.shape.world[12] + dir.x*-0.225;
-        trgXZ[1] = e.shape.world[14] + dir.z*-0.75;
+        trgXZ[0] = e.shape.world[12] + 0.1554;
+        trgXZ[1] = e.shape.world[14] - 3.5*0.1554;
         dragging = false;
         requestAnimationFrame(animateCamera);
     });
@@ -351,18 +371,4 @@ import fs from "./webgl/shaders/fragment-main.js";
         dragging = false;
         requestAnimationFrame(animateCamera);
     });
-
-
-    function force() {
-        shapes[4].show();
-        shapes[4].focus();
-        shapes[5].show();
-        shapes[5].focus();
-        picked[0] = 1, picked[3] = 0x40, picked[4] = 0x41, picked[5] = -1;
-        trgXZ[0] = -0.5-0.225;
-        trgXZ[1] = 0.2018-0.75;
-        dragging = false;
-        requestAnimationFrame(animateCamera);
-    }
-    // force();
 }())

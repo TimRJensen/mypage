@@ -27,12 +27,16 @@ button svg {
     pointer-events: none;
 }
 
+p {
+    margin: 0;
+}
+
 /* Custom styles */
 #content {
     display: flex;
     flex-flow: column nowrap;
     align-items: center;
-    overflow: hidden;
+    /* overflow: hidden; */
 
 }
 
@@ -149,11 +153,14 @@ button svg {
 
 #canvas-box {
     position: relative;
+    width: 100vmax;
+    height: 100vmin;
+    perspective-origin: -150%;
 }
 
 #canvas-box #canvas {
-    width: 100vw;
-    height: 100vh;
+    width: 100vmax;
+    height: 100vmin;
     background-color: orange;
     touch-action: none;
 }
@@ -161,8 +168,6 @@ button svg {
 #canvas-box::before {
     display: none;
     position: absolute;
-    width: 100%;
-    height: 100vh;
     content: "";
     background-color: rgba(0, 0, 0, 0.5);
 }
@@ -210,15 +215,42 @@ button svg {
     height: 100%;
 }
 
-#canvas-box .info {
+#canvas-box .info-box {
     position: absolute;
     display: none;
-    height: 33%;
+    flex-flow: row wrap;
+    justify-content: center;
+    align-content: center;
+    gap: 15px;
+    height: max(300px, 33%);
     aspect-ratio: 3/4;
     border-radius: 25px;
     border: solid calc(1rem*0.25) #9765CD;
+    padding: 20px 10px;
     background-color: rebeccapurple;
     color: #FFF;
-    padding: 20px 10px;
-    transform: translate(0, -100%);
+    text-align: center;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    font-size: 18px;
+    transform: translate(0, -82.5%) perspective(500px) rotateX(-5deg);
+}
+
+#canvas-box .info-box .rating {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+#canvas-box .info-box .rating > * {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: solid 4px #FFF;
+    border-radius: 50%;
+}
+
+#canvas-box .info-box .rating > *[data-toggled="1"] {
+    background-color: #FFF;
 }

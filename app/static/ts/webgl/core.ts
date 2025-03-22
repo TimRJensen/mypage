@@ -100,6 +100,7 @@ export function initializeUniforms(gl: WebGL2RenderingContext, program: WebGLPro
 export function createStaticBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, target?: GLenum , method?: number): [boolean, WebGLBuffer|null] {
     const buffer = gl.createBuffer();
     if (!buffer) {
+        console.log("Failed to create buffer");
         return [false, null];
     }
 
@@ -350,6 +351,9 @@ export class Program<T extends Drawable<T>> {
             return;
         }
 
+        // Initalize textures. Do this first as it is async.
+        loadTexture(gl, options.textures);
+
         // Program draws everything to a fbo. This allows plugins to obtain that fbo,
         // and extend it with their own drawing logic. So start by creating a quad,
         // and if that fails, just return.
@@ -381,9 +385,6 @@ export class Program<T extends Drawable<T>> {
             return;
         }
 
-        // Initalize textures. Do this first as it is async.
-        loadTexture(gl, options.textures);
-
         // Initialize attributes
         const main_attribs = initializeAtrtibutes(gl, main!, options.attrs ?? {});
 
@@ -403,15 +404,18 @@ export class Program<T extends Drawable<T>> {
 
         // Initialize frambuffer
         const dpi = window.devicePixelRatio >= 1.5 ? 1.5 : 1;
-        const [ok, main_fbo] = createFrameBufferObject(gl, canvas.width*dpi, canvas.height*dpi);
+        console.log(canvas.width, canvas.clientWidth, canvas.height, canvas.clientHeight);
+        const [ok, main_fbo] = createFrameBufferObject(gl, window.outerWidth, window.outerHeight);
         if (!ok) {
             return;
         }
-
         // Resize canvas
-        gl.canvas.width = canvas.width*dpi;
-        gl.canvas.height = canvas.height*dpi;
+        gl.canvas.width = window.outerWidth;
+        gl.canvas.height = window.outerHeight;
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        console.log(gl.drawingBufferWidth, gl.drawingBufferHeight);
+        console.log(gl.canvas.width, gl.canvas.height);
+
         
         this.gl = gl;
         this.quad = quad!;
@@ -425,6 +429,15 @@ export class Program<T extends Drawable<T>> {
         this.programOptions.color[1] /= 255;
         this.programOptions.color[2] /= 255;
         this.fbo = main_fbo!;
+
+        window.addEventListener("resize", () => {
+            const dpi = window.devicePixelRatio >= 1.5 ? 1.5 : 1;
+            gl.canvas.width = canvas.width*dpi;
+            gl.canvas.height = canvas.height*dpi;
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            console.log(canvas.width, canvas.clientWidth, canvas.height, canvas.clientHeight);
+
+        });
     }
 
     use() {
@@ -494,6 +507,7 @@ export class Program<T extends Drawable<T>> {
         gl.bindVertexArray(this.vao);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, fbo!.attachments[0]);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         gl.bindVertexArray(null);
 

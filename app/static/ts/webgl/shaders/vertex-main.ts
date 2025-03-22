@@ -1,5 +1,5 @@
 export default `#version 300 es
-precision highp float;
+precision mediump float;
 precision mediump int;
 
 layout(location=0) in vec3 a_position;
@@ -13,8 +13,6 @@ out float v_brightness;
 uniform int u_type;
 uniform mat4 u_vpm;
 uniform mat4 u_model;
-uniform mat4 u_inverse_transpose;
-
 uniform vec3 u_light_dir;
 
 void main() {

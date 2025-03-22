@@ -88,7 +88,6 @@ export class BloomPlugin implements PluginLike {
         this.gl = gl;
         this.n = n;
         program.shapes[0].focused
-        console.log(this.n)
     }
 
     before(gl: WebGL2RenderingContext,  fbo: FrameBufferObject) {
