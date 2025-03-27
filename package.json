@@ -1,4 +1,10 @@
 {
   "name": "mypage",
-  "packageManager": "yarn@4.6.0"
+  "packageManager": "yarn@4.6.0",
+  "scripts": {
+    "tsc:watch": "tsc --watch"
+  },
+  "dependencies": {
+    "typescript": "^5.8.2"
+  }
 }

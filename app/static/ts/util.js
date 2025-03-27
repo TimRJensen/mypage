@@ -22,5 +22,5 @@ function distributePoints(count, offset, a, b) {
     }
 }
 
-// convertPoint([[0, 4] ], 1.5, 1.5, 7);
-distributePoints(6, 3*0.1554, 0.3491, 2.0943);
+// convertPoint([[1, 0] ], 1.5, 1.5, 7);
+distributePoints(5, 2.5*0.1554, 1.57079633, Math.PI);

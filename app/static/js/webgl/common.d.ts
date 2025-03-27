@@ -13,7 +13,6 @@ export type UniformObject = {
     type: number;
 };
 export type TextureObject = {
-    idx: number;
     width: number;
     height: number;
     depth: number;
@@ -23,6 +22,8 @@ export type TextureInfo = {
 };
 export type DrawInfo<T> = {
     [key: string]: number | ArrayBuffer | ((shape: T) => number | ArrayBuffer);
+} & {
+    atlases?: Array<WebGLTexture | null>;
 };
 export interface Drawable<T> extends Iterable<T> {
     readonly buffer: Promise<[WebGLBuffer, WebGLBuffer]>;

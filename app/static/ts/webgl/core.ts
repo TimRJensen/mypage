@@ -160,12 +160,12 @@ export function createVAO(gl: WebGL2RenderingContext, program: WebGLProgram, att
 export function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, width: number, height: number, info: TextureObject) { 
     const tex = gl.createTexture(), pbo = gl.createBuffer();
     if (!tex || !pbo) {
-        return undefined;
+        return null;
     }
 
-    gl.activeTexture(gl.TEXTURE0 + info.idx);
+    const size = Math.trunc(width/info.width);
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, tex);
-    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA8, width, height, info.depth);
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, size, gl.RGBA8, info.width, info.height, info.depth);
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
@@ -174,15 +174,15 @@ export function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: Array
     gl.pixelStorei(gl.UNPACK_ROW_LENGTH, width);
     gl.pixelStorei(gl.UNPACK_IMAGE_HEIGHT, height);
     for (let i = 0; i < info.depth; i++) {
-        const size = width/info.width;
-        const row = Math.trunc(i/size)*info.width;
-        const col = (i%size)*info.height;
+        const row = Math.floor(i/size)*info.height;
+        const col = (i%size)*info.width;
         gl.pixelStorei(gl.UNPACK_SKIP_ROWS, row);
         gl.pixelStorei(gl.UNPACK_SKIP_PIXELS, col);
         gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, info.width, info.height, 1, gl.RGBA, gl.UNSIGNED_BYTE, 0);
     }
+    gl.generateMipmap(gl.TEXTURE_2D_ARRAY)
     gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
-    // gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
 
     return tex;
 }
@@ -192,23 +192,29 @@ export function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: Array
  */
 function loadTexture(gl: WebGL2RenderingContext, texInfo?: TextureInfo) {
     if (!texInfo) {
-        return;
+        return Promise.resolve([]);
     }
 
+    const promises: Array<Promise<WebGLTexture|null>> = [];
     for (const [key, info] of Object.entries(texInfo)) {
         const img = new Image();
-        img.onload = () => {
-            const {width, height} = img;
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d")!;
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(img, 0, 0);
-
-            createTextureArrayBuffer(gl, ctx.getImageData(0, 0, width, height).data.buffer, width, height, info);
-        };
-        img.src = key
+        const promise = new Promise<WebGLTexture|null>((resolve) => {
+            img.onload = () => {
+                const {width, height} = img;
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d")!;
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0);
+    
+                resolve(createTextureArrayBuffer(gl, ctx.getImageData(0, 0, width, height).data.buffer, width, height, info));
+            };
+            img.src = key
+        });
+        promises.push(promise);
     }
+
+    return Promise.all(promises);
 }
 
 export class FrameBufferObject {
@@ -327,9 +333,11 @@ export class Program<T extends Drawable<T>> {
     protected main: WebGLProgram = null!;
     protected attribs: Map<string, AttributeObject> = null!;
     protected uniforms: Map<string, UniformObject> = null!;
+    protected atlases: Array<WebGLTexture|null> = null!;
     protected programOptions: ProgramOptions<T> = null!;
     protected rendering: boolean = false;
     protected scene: Scene<T> = [];
+    protected ready: Array<Promise<unknown>> = null!;
     // Event stuff
     protected handlers: Map<string, PluginEventHandler<T, any>> = new Map(); // TODO: Type this
     protected events: Array<PluginEvent<T>> = [];
@@ -352,7 +360,10 @@ export class Program<T extends Drawable<T>> {
         }
 
         // Initalize textures. Do this first as it is async.
-        loadTexture(gl, options.textures);
+        this.ready = [loadTexture(gl, options.textures).then((atlases) => {
+                this.atlases = atlases;
+            })
+        ];
 
         // Program draws everything to a fbo. This allows plugins to obtain that fbo,
         // and extend it with their own drawing logic. So start by creating a quad,
@@ -400,22 +411,18 @@ export class Program<T extends Drawable<T>> {
                 }
                 this.scene.push([vao!, shape]);
             });
+            this.ready.push(shape.buffer);
         }
 
         // Initialize frambuffer
-        const dpi = window.devicePixelRatio >= 1.5 ? 1.5 : 1;
-        console.log(canvas.width, canvas.clientWidth, canvas.height, canvas.clientHeight);
-        const [ok, main_fbo] = createFrameBufferObject(gl, window.outerWidth, window.outerHeight);
+        const [ok, main_fbo] = createFrameBufferObject(gl, canvas.width, canvas.height);
         if (!ok) {
             return;
         }
         // Resize canvas
-        gl.canvas.width = window.outerWidth;
-        gl.canvas.height = window.outerHeight;
+        gl.canvas.width = canvas.width;
+        gl.canvas.height = canvas.height;
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        console.log(gl.drawingBufferWidth, gl.drawingBufferHeight);
-        console.log(gl.canvas.width, gl.canvas.height);
-
         
         this.gl = gl;
         this.quad = quad!;
@@ -429,15 +436,6 @@ export class Program<T extends Drawable<T>> {
         this.programOptions.color[1] /= 255;
         this.programOptions.color[2] /= 255;
         this.fbo = main_fbo!;
-
-        window.addEventListener("resize", () => {
-            const dpi = window.devicePixelRatio >= 1.5 ? 1.5 : 1;
-            gl.canvas.width = canvas.width*dpi;
-            gl.canvas.height = canvas.height*dpi;
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-            console.log(canvas.width, canvas.clientWidth, canvas.height, canvas.clientHeight);
-
-        });
     }
 
     use() {
@@ -476,7 +474,7 @@ export class Program<T extends Drawable<T>> {
         
         // Static uniforms
         for (const [key, val] of Object.entries(drawInfo)) {
-            if (!uniforms.has(key) || val instanceof Function) {
+            if (!uniforms.has(key) || val instanceof Function || val instanceof Array) {
                 continue;
             }
             setUniform(gl, uniforms.get(key)!, val);
@@ -506,8 +504,8 @@ export class Program<T extends Drawable<T>> {
         gl.useProgram(this.quad);
         gl.bindVertexArray(this.vao);
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, fbo!.attachments[0]);
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.bindTexture(gl.TEXTURE_2D, fbo.attachments[0]);
+        gl.viewport(0, 0, fbo.width, fbo.height);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         gl.bindVertexArray(null);
 
@@ -526,15 +524,16 @@ export class Program<T extends Drawable<T>> {
        requestAnimationFrame(this.draw.bind(this));
     }
 
-    render(options: DrawInfo<T> = {}) {
+    render(drawInfo: DrawInfo<T> = {}) {
         if (this.rendering) {
             return;
         }
         this.rendering = true;
 
         // @ts-ignore
-        this.drawInfo = options;
-        Promise.all(this.shapes.map((shape) => shape.buffer)).then(() => {
+        this.drawInfo = drawInfo;
+        Promise.all(this.ready).then(() => {
+            this.drawInfo.atlases = this.atlases;
             requestAnimationFrame(this.draw.bind(this));
         });
     }

@@ -31,7 +31,7 @@ export declare function createVAO(gl: WebGL2RenderingContext, program: WebGLProg
 /**
  * Utility function to create a texture array buffer from an HTMLImageElement.
  */
-export declare function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, width: number, height: number, info: TextureObject): WebGLTexture | undefined;
+export declare function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer, width: number, height: number, info: TextureObject): WebGLTexture | null;
 export declare class FrameBufferObject {
     readonly buff: WebGLFramebuffer;
     width: number;
@@ -78,9 +78,11 @@ export declare class Program<T extends Drawable<T>> {
     protected main: WebGLProgram;
     protected attribs: Map<string, AttributeObject>;
     protected uniforms: Map<string, UniformObject>;
+    protected atlases: Array<WebGLTexture | null>;
     protected programOptions: ProgramOptions<T>;
     protected rendering: boolean;
     protected scene: Scene<T>;
+    protected ready: Array<Promise<unknown>>;
     protected handlers: Map<string, PluginEventHandler<T, any>>;
     protected events: Array<PluginEvent<T>>;
     readonly fbo: FrameBufferObject;
@@ -90,7 +92,7 @@ export declare class Program<T extends Drawable<T>> {
     use(): void;
     protected static lastTime: number;
     draw(time: number): void;
-    render(options?: DrawInfo<T>): void;
+    render(drawInfo?: DrawInfo<T>): void;
     fire(e: PluginEvent<T>): void;
     on<E extends PluginEvent<T>>(type: keyof EventMap<T>, handler: PluginEventHandler<T, E>): void;
 }

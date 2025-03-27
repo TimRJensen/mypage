@@ -7,7 +7,10 @@ export declare enum ShapeType {
     BACKGROUND = 8,
     SHADOW = 16,
     TEXTURED = 1,
-    LOGO = 1
+    LOGO = 1,
+    TEXT = 3,
+    SKILL = 3,
+    PROJECT = 5
 }
 type ShapeProps = {
     id?: number;
@@ -29,14 +32,14 @@ export declare class Shape {
     readonly indices = 0;
     readonly vertices = 0;
     readonly world: mat4;
-    readonly color: Float32Array;
-    readonly pick_color: Float32Array;
+    readonly color: Float32Array<ArrayBuffer>;
+    readonly pick_color: Float32Array<ArrayBuffer>;
     readonly depth: number;
     display: "inherit" | "fixed" | "hidden";
     visible: number;
     hovered: number;
     focused: number;
-    constructor(gl: WebGL2RenderingContext, method: GLenum, id: number, type: ShapeType, data: Promise<ArrayBuffer>, { pos, color, pick_color, display, }?: ShapeProps);
+    constructor(gl: WebGL2RenderingContext, method: GLenum, id: number | undefined, type: ShapeType | undefined, data: Promise<ArrayBuffer>, { pos, color, pick_color, display, }?: ShapeProps);
     [Symbol.iterator](): Generator<this, void, unknown>;
     show(): void;
     hide(): void;
@@ -78,7 +81,7 @@ export declare class Plane extends Shape {
     protected static data: Promise<ArrayBuffer>;
     readonly world: mat4;
     readonly depth: number;
-    constructor(gl: WebGL2RenderingContext, depth: number, { id, type, pos, scale, color, pick_color, display, }: ShapeProps);
+    constructor(gl: WebGL2RenderingContext, depth: number, { id, type, pos, rotation, scale, color, pick_color, display, }: ShapeProps);
 }
 interface CompositeProps extends Omit<ShapeProps, "color" | "pick_color"> {
     shapes?: Array<Shape>;
@@ -121,5 +124,18 @@ export declare class Edge extends Composite {
 }
 export declare class Logo extends Composite {
     constructor(gl: WebGL2RenderingContext, depth: number, { id, pos }: CompositeProps);
+    draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
+}
+export declare class Text extends Composite {
+    constructor(gl: WebGL2RenderingContext, depth: number, { id, display, pos, rotation }: CompositeProps);
+    draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
+}
+export declare class Skill extends Composite {
+    constructor(gl: WebGL2RenderingContext, depth: number, { id, pos, rotation, scale }: CompositeProps);
+    draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
+}
+export declare class Project extends Composite {
+    constructor(gl: WebGL2RenderingContext, depth: number, { id, pos, rotation }: CompositeProps);
+    draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
 }
 export {};

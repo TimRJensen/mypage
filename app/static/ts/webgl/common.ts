@@ -1,33 +1,34 @@
 export type AttributeObject = {
-    loc?: number, 
-    type?: number,
-    len: number,
-    stride: number,
-    size: number,
+    loc?: number;
+    type?: number;
+    len: number;
+    stride: number;
+    size: number;
 }
 
 export type AttributeInfo = {
-    [key: string]: AttributeObject,
+    [key: string]: AttributeObject;
 }
 
 export type UniformObject = {
-    loc: WebGLUniformLocation,
-    type: number,
+    loc: WebGLUniformLocation;
+    type: number;
 };
 
 export type TextureObject = {
-    idx: number,
-    width: number,
-    height: number,
-    depth: number,
+    width: number;
+    height: number;
+    depth: number;
 }
 
 export type TextureInfo = {
-    [key: string]: TextureObject,
+    [key: string]: TextureObject;
 }
 
 export type DrawInfo<T> = {
-    [key: string]: number | ArrayBuffer | ((shape: T) => number|ArrayBuffer)
+    [key: string]: number | ArrayBuffer | ((shape: T) => number|ArrayBuffer);
+} & {
+    atlases?: Array<WebGLTexture | null>;
 }
 
 export interface Drawable <T> extends Iterable<T> {
@@ -40,7 +41,6 @@ export interface CompositeLike<T> extends Drawable<T> {
 }
 
 export type Scene<T> = Array<[WebGLVertexArrayObject, Drawable<T>]>;
-
 
 export function setUniform(gl: WebGL2RenderingContext, info: UniformObject, data: ArrayBuffer|number) {
     if (!info) {

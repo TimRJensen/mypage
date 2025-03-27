@@ -22,6 +22,9 @@ export enum ShapeType {
     SHADOW      = ShapeType.COLORED | 0x10,
     TEXTURED    = 0x1,
     LOGO        = ShapeType.TEXTURED | 0x1,
+    TEXT        = ShapeType.TEXTURED | 0x2,
+    SKILL       = ShapeType.TEXTURED | 0x3,
+    PROJECT     = ShapeType.TEXTURED | 0x4,
 }
 
 // Alias for WebGL2RenderingContext constants.
@@ -269,7 +272,7 @@ export class Root extends Shape {
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
         ])
-        .rotateX(-Math.PI/1.5)
+        .rotateX(-Math.PI/2)
         .scale(scale[0], scale[1], scale[2]);
     }
 }
@@ -307,7 +310,7 @@ export class Background extends Circle {
     constructor(
         gl: WebGL2RenderingContext,
         {
-            id = -1, type = ShapeType.COLORED,
+            id = -1, type = ShapeType.SHADOW,
             pos = [0, 0, 0],
             scale = [1, 1, 1],
             color = WHITE, pick_color = WHITE,
@@ -323,8 +326,8 @@ export class Background extends Circle {
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
         ])
-        .rotateX(-Math.PI/1.5)
-        .scale(scale[0]+0.15, scale[1]+0.15, scale[2]+0.15);
+        .rotateX(-Math.PI/2)
+        .scale(scale[0]+0.175, scale[1], scale[2]+0.175);
     }
 }
 
@@ -383,6 +386,7 @@ export class Plane extends Shape {
         {
             id = -1, type = ShapeType.TEXTURED,
             pos = [0, 0, 0],
+            rotation = [0, 0, 0],
             scale = [1, 1, 1],
             color = WHITE, pick_color = WHITE,
             display = "hidden",
@@ -396,7 +400,7 @@ export class Plane extends Shape {
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
         ])
-            .rotateX(-Math.PI/2)
+            .rotate(rotation[0], rotation[1], rotation[2])
             .scale(scale[0], scale[1], scale[2]);
 
         this.depth = depth;
@@ -524,7 +528,11 @@ export class Composite implements Drawable<Shape> {
             shape.visible = 1;
         }
     }
+
     hide() {
+        if (this.display == "fixed") {
+            return;
+        }
 
         for (const shape of this.shapes) {
             if (shape.display == "fixed" || shape.focused) {
@@ -556,7 +564,7 @@ export class Composite implements Drawable<Shape> {
         }
     }
 
-     draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset = 0) {
+    draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset = 0) {
         if (!this.visible) {
             return;
         }
@@ -572,8 +580,8 @@ export class RootNode extends Composite {
     constructor(gl: WebGL2RenderingContext, {id = -1, pos = [0, 0, 0]}: CompositeProps) {
         super(gl, {id, display: "fixed", pos, shapes: [
             new Root(gl, {pos: [0.0, 0.05, 0.0], pick_color: [255, 141, 35]}),
-            new Background(gl, {type: ShapeType.BACKGROUND, pos: [0.005, 0.07, 0.0], color: [102, 51, 153]}),
-            new Circle(gl, {type: ShapeType.SHADOW, pos: [0.0, 0.01, 0.0], color: [0, 0, 0]}),
+            new Background(gl, {type: ShapeType.SHADOW, pos: [0.0, 0.07, 0.0], color: [102, 51, 153]}),
+            new Circle(gl, {id: 0, type: ShapeType.SHADOW, pos: [0.0, 0.01, 0.0], color: [0, 0, 0]}),
         ]});
     }
 } 
@@ -582,7 +590,7 @@ export class Node extends Composite {
     constructor(gl: WebGL2RenderingContext, {id = -1, pos = [0, 0, 0]}: CompositeProps) {
         super(gl, {id, display: "fixed", pos, shapes: [
             new Sphere(gl, {pos: [0.0, 0.06, 0.0], pick_color: [255, 141, 35]}),
-            new Circle(gl, {type: ShapeType.SHADOW, pos: [0.0, 0.005, 0.0], color: [0, 0, 0]}),
+            new Circle(gl, {id: 0, type: ShapeType.SHADOW, pos: [0.0, 0.01, 0.0], color: [0, 0, 0]}),
         ]});
     }
 }
@@ -593,8 +601,8 @@ export class Edge extends Composite {
             new Line(gl, start, end, 0.0015, {pick_color: [255, 141, 35]}),
             new Line(
                 gl,
-                [start[0] -0.0025, 0.001, start[2] + 0.01],
-                [end[0] -0.0025, 0.001, end[2] + 0.025],
+                [start[0] -0.0025, 0.005, start[2] + 0.01],
+                [end[0] -0.0025, 0.005, end[2] + 0.025],
                 0.00125,
                 {type: ShapeType.SHADOW, color: [0, 0, 0]}
             ),
@@ -604,11 +612,72 @@ export class Edge extends Composite {
 }
 
 export class Logo extends Composite {
-    constructor(gl: WebGL2RenderingContext, depth: number, {id = -1, pos = [0, 0, 0]}: CompositeProps) {
+    constructor(gl: WebGL2RenderingContext, depth: number, {id = 0, pos = [0, 0, 0]}: CompositeProps) {
         super(gl, {id, display: "hidden", pos, shapes: [
-            new Plane(gl, depth, {pos: [0.0, 0.1, 0.0]}),
-            new Circle(gl, {type: ShapeType.SHADOW, pos: [0.0, 0.005, 0.0], color: [0, 0, 0]}),
+            new Plane(gl, depth, {pos: [0.0, 0.1, 0.0], rotation: [-Math.PI/2, 0.0, 0.0], scale: [1.2, 1.0, 1.0]}),
+            new Circle(gl, {id: -1, type: ShapeType.SHADOW, pos: [0.0, 0.005, 0.0], color: [0, 0, 0]}),
         ]});
         this.visible = 0;
+    }
+
+    override draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>,  drawInfo: DrawInfo<Shape>, offset?: number): void {
+        const {atlases} = drawInfo;
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D_ARRAY, atlases![0]);
+
+        super.draw(gl, map, drawInfo, offset);
+    }
+}
+
+export class Text extends Composite {
+    constructor(gl: WebGL2RenderingContext, depth: number, {id = 0, display = "fixed", pos = [0, 0, 0], rotation = [0, 0, 0]}: CompositeProps) {
+        super(gl, {id, display, pos: [pos[0], 0.002, pos[2]], shapes: [
+            new Plane(gl, depth, {type: ShapeType.TEXT, rotation, scale: [2.5, 1.0, 1.5]}),
+        ]});
+        this.visible = display == "fixed" ? 1 : 0;
+    }
+
+    override draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void {
+        const {atlases} = drawInfo;
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D_ARRAY, atlases![1]);
+        super.draw(gl, map, drawInfo, offset);
+    }
+}
+
+export class Skill extends Composite {
+    constructor(gl: WebGL2RenderingContext, depth: number, {id = 0, pos = [0, 0, 0], rotation = [-Math.PI/2, 0.0, 0.0], scale = [0.75, 1.0, 0.75]}: CompositeProps) {
+        super(gl, {id, display: "hidden", pos, shapes: [
+            new Plane(gl, depth, {pos: [0.0, 0.1, 0.0], rotation, scale}),
+            new Circle(gl, {id: -1, type: ShapeType.SHADOW, pos: [0.0, 0.005, 0.0], color: [0, 0, 0]}),
+        ]});
+        this.visible = 0;
+    }
+
+    override draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>,  drawInfo: DrawInfo<Shape>, offset?: number): void {
+        const {atlases} = drawInfo;
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D_ARRAY, atlases![2]);
+
+        super.draw(gl, map, drawInfo, offset);
+    }
+}
+
+export class Project extends Composite {
+    constructor(gl: WebGL2RenderingContext, depth: number, {id = 0, pos = [0, 0, 0], rotation = [-Math.PI/2, 0.0, 0.0]}: CompositeProps) {
+        super(gl, {id, display: "hidden", pos, shapes: [
+            new Plane(gl, depth, {pos: [0.0, 0.1, 0.0], rotation, scale: [1.2, 1.0, 1.0]}),
+            new Circle(gl, {id: -1, type: ShapeType.SHADOW, pos: [0.0, 0.005, 0.0], color: [0, 0, 0]}),
+        ]});
+        this.visible = 0;
+    }
+
+    override draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>,  drawInfo: DrawInfo<Shape>, offset?: number): void {
+        const {atlases} = drawInfo;
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D_ARRAY, atlases![3]);
+
+        super.draw(gl, map, drawInfo, offset);
     }
 }

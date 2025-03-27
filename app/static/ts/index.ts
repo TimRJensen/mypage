@@ -2,7 +2,7 @@ import {mat4, vec3} from "./linalg.js";
 import {Program} from "./webgl/core.js";
 import {PointerPlugin, PointerPluginEvent} from "./webgl/plugins/pointer.js";
 import {BloomPlugin} from "./webgl/plugins/bloom.js";
-import {Grid, Composite, RootNode, Node, Edge, Logo} from "./webgl/geometry.js";
+import {Grid, Composite, RootNode, Node, Edge, Logo, Text, Skill, Project} from "./webgl/geometry.js";
 import vs from "./webgl/shaders/vertex-main.js";
 import fs from "./webgl/shaders/fragment-main.js";
 import hints from "./hints.js";
@@ -11,12 +11,11 @@ import hints from "./hints.js";
  * Handle transition
  */
 (function () {
-    document.querySelector<HTMLButtonElement>("#msg-box .msg .button")!
-        .addEventListener("pointerdown", () => {
-            document
-                .querySelector<HTMLDivElement>("#canvas-box")!
-                .scrollIntoView({behavior: "smooth"});
-    }, {once: true});
+    document.querySelectorAll<HTMLButtonElement>("#msg-box .button, #footer .button")!.forEach((button) => {
+        button.addEventListener("pointerdown", () => 
+            document.querySelector<HTMLDivElement>("#canvas-box")!.scrollIntoView({behavior: "smooth"})
+        )
+    });
 }());
 
 /**
@@ -39,69 +38,81 @@ import hints from "./hints.js";
         // Personal skills
         new Composite(gl, {id: 2, pos: [-0.4286, 0.0, -0.4411], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [-0.4286, 0.06, -0.4411], [0.0, 0.06, -0.728]),
+            new Edge(gl, [-0.4286, 0.06, -0.4411], [0.0, 0.06, -0.72]),
+            new Text(gl, 3, {pos: [0.077, 0.0, -0.07], rotation: [Math.PI, -Math.PI/4, 0.0]}),
+            new Skill(gl, 0, {id: 0x20, pos: [-0.3885, 0.0, 0.0]}),
+            new Skill(gl, 1, {id: 0x21, pos: [-0.3500, 0.0, 0.1500], scale: [1.25, 1.0, 1.25]}),
+            new Skill(gl, 3, {id: 0x22, pos: [-0.2747, 0.0, 0.2747]}),
+            new Skill(gl, 2, {id: 0x23, pos: [-0.1487, 0.0, 0.3589], scale: [1.1, 1.0, 1.1]}),
+            new Skill(gl, 4, {id: 0x24, pos: [0.0, 0.0, 0.3885]}),
         ]}),
         // Projects
         new Composite(gl, {id: 3, pos: [0.4286, 0.0, -0.4411], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.4286, 0.06, -0.4411], [0.0, 0.06, -0.728]),
+            new Edge(gl, [0.4286, 0.06, -0.4411], [0.0, 0.06, -0.72]),
+            new Text(gl, 4, {pos: [-0.045, 0.0, -0.045], rotation: [Math.PI, Math.PI/4, 0.0]}),
+            new Project(gl, 1, {id: 0x30, pos: [0.3885, 0.0, 0.0], rotation: [-Math.PI/2, 0.0, 0.5]}),
+            new Project(gl, 0, {id: 0x31, pos: [0.2747, 0.0, 0.1500], rotation: [-Math.PI/2, 0.0, 0.5]}),
         ]}),
         // Technical skills
         new Composite(gl, {id: 0x40, pos: [0.0, 0.0, -0.1554], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.0, 0.06, -0.1554], [0.0, 0.06, -0.728]),
+            new Edge(gl, [0.0, 0.06, -0.1554], [0.0, 0.06, -0.72]),
+            new Text(gl, 5, {pos: [0.0, 0.0, -0.1], rotation: [Math.PI, 0.0, 0.0]}),
+            new Text(gl, 1, {display: "hidden", pos: [-0.49, 0.0,  0.375], rotation: [Math.PI, -Math.PI/4, 0.0]}),
+            new Text(gl, 2, {display: "hidden", pos: [0.0, 0.0, 0.65], rotation: [Math.PI, 0.0, 0.0]}),
+            new Text(gl, 0, {display: "hidden", pos: [0.49, 0.0,  0.375], rotation: [Math.PI, Math.PI/4, 0.0]}),
         ]}),
         // Backend
         new Composite(gl, {id: 0x41, pos: [-0.5714, 0.0, 0.2732], shapes: [
             new Node(gl, {}),
             new Edge(gl, [-0.5714, 0.06, 0.2732], [0.0, 0.06, -0.1564]),
-            new Logo(gl, 11, {id: 0x410, pos: [0.2331, 0.0, 0.4038]}),
-            new Logo(gl, 3, {id: 0x411, pos: [0.0809, 0.0, 0.4591]}),
-            new Logo(gl, 10, {id: 0x412, pos: [-0.0810, 0.0, 0.4591]}),
-            new Logo(gl, 12, {id: 0x413, pos: [-0.2331, 0.0, 0.4037]}),
-            new Logo(gl, 4, {id: 0x414, pos: [-0.3571, 0.0, 0.2997]}),
-            new Logo(gl, 6, {id: 0x415, pos: [-0.4381, 0.0, 0.1595]}),
+            new Logo(gl, 6, {id: 0x410, pos: [0.2331, 0.0, 0.4038]}),
+            new Logo(gl, 4, {id: 0x411, pos: [0.0809, 0.0, 0.4591]}),
+            new Logo(gl, 12, {id: 0x412, pos: [-0.0810, 0.0, 0.4591]}),
+            new Logo(gl, 10, {id: 0x413, pos: [-0.2331, 0.0, 0.4037]}),
+            new Logo(gl, 3, {id: 0x414, pos: [-0.3571, 0.0, 0.2997]}),
+            new Logo(gl, 11, {id: 0x415, pos: [-0.4381, 0.0, 0.1595]}),
         ]}),
         // Frontend
         new Composite(gl, {id: 0x42, pos: [0.0, 0.0, 0.5589], shapes: [
             new Node(gl, {}),
             new Edge(gl, [0.0, 0.06, 0.5589], [0.0, 0.06, -0.1564]),
-            new Logo(gl, 9, {id: 0x420, pos: [0.4381, 0.0, 0.1595]}),
-            new Logo(gl, 15, {id: 0x421, pos: [0.3391, 0.0, 0.3199]}),
-            new Logo(gl, 14, {id: 0x422, pos: [0.1846, 0.0, 0.4281]}),
+            new Logo(gl, 17, {id: 0x420, pos: [0.4381, 0.0, 0.1595]}),
+            new Logo(gl, 2, {id: 0x421, pos: [0.3391, 0.0, 0.3199]}),
+            new Logo(gl, 8, {id: 0x422, pos: [0.1846, 0.0, 0.4281]}),
             new Logo(gl, 16, {id: 0x423, pos: [0.0000, 0.0, 0.4662]}),
-            new Logo(gl, 8, {id: 0x424, pos: [-0.1846, 0.0, 0.4281]}),
-            new Logo(gl, 2, {id: 0x425, pos: [-0.3391, 0.0, 0.3199]}),
-            new Logo(gl, 17, {id: 0x426, pos: [-0.4381, 0.0, 0.1595]}),
+            new Logo(gl, 14, {id: 0x424, pos: [-0.1846, 0.0, 0.4281]}),
+            new Logo(gl, 15, {id: 0x425, pos: [-0.3391, 0.0, 0.3199]}),
+            new Logo(gl, 9, {id: 0x426, pos: [-0.4381, 0.0, 0.1595]}),
         ]}),
         // All purpose
         new Composite(gl, {id: 0x43, pos: [0.5714, 0.00, 0.2732], shapes: [
             new Node(gl, {}),
             new Edge(gl, [0.5714, 0.06, 0.2732], [0.0, 0.06, -0.1564]),
-            new Logo(gl, 0, {id: 0x430, pos: [-0.2331, 0.0, 0.4038]}),
-            new Logo(gl, 1, {id: 0x431, pos: [-0.0406, 0.0, 0.4644]}),
+            new Logo(gl, 7, {id: 0x430, pos: [-0.2331, 0.0, 0.4038]}),
+            new Logo(gl, 13, {id: 0x431, pos: [-0.0406, 0.0, 0.4644]}),
             new Logo(gl, 5, {id: 0x432, pos: [0.1595, 0.0, 0.4381]}),
-            new Logo(gl, 13, {id: 0x433, pos: [0.3297, 0.0, 0.3297]}),
-            new Logo(gl, 7, {id: 0x434, pos: [0.4381, 0.0, 0.1595]}),
+            new Logo(gl, 1, {id: 0x433, pos: [0.3297, 0.0, 0.3297]}),
+            new Logo(gl, 0, {id: 0x434, pos: [0.4381, 0.0, 0.1595]}),
         ]}),
     ];
-    // Breadcumbs
-    const msgs = new Map([
-        [0, "@"],
-        [1, "contact"],
-        [2, "personal skills"],
-        [3, "projects"],
-        [0x40, "technical skills"],
-        [0x41, "backend"],
-        [0x42, "frontend"],
-        [0x43, "all purpose"],
-    ])
-    console.log("Max Elements Indices:", window.outerWidth, window.outerHeight);
+    const map = new Map([
+        [0, {txt: "@", index: 0}],
+        [1, {txt: "contact", index: 1}],
+        [2, {txt: "personal skills", index: 2}],
+        [3, {txt: "projects", index: 3}],
+        [0x40, {txt: "technical skills", index: 4}],
+        [0x41, {txt: "backend", index: 5}],
+        [0x42, {txt: "frontend", index: 6}],
+        [0x43, {txt: "all purpose", index: 7}],
+    ]);
+  
     // Viewprojection matrix
     const cam = new vec3(0.2, 0.4, -1.45);
     const center = new vec3(0, 0, 0);
     const up = new vec3(0, 1, 0);
-    const pm = mat4.perspective(Math.PI/4, 1920/1080, 0.1, 50)
+    const pm = mat4.perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 50)
     const vpm = pm.mul(mat4.lookAt(cam, center, up));
 
     // Create the WebGL program.
@@ -114,10 +125,24 @@ import hints from "./hints.js";
         },
         textures: {
             "/static/imgs/atlas-logos.png": {
-                idx: 0,
                 width: 256,
                 height: 256,
                 depth: 18,
+            },
+            "/static/imgs/atlas-grid-texts.png": {
+                width: 512,
+                height: 256,
+                depth: 6,
+            },
+            "/static/imgs/atlas-personal-skills.png": {
+                width: 256,
+                height: 256,
+                depth: 5,
+            },
+            "/static/imgs/atlas-projects.png": {
+                width: 512,
+                height: 512,
+                depth: 2,
             },
         },
     });
@@ -135,12 +160,7 @@ import hints from "./hints.js";
         u_model: (shape) => shape.world,
         u_color: (shape) => shape.color,
         u_pick_color: (shape) => shape.pick_color,
-        u_sampler: (shape) => {
-            switch (shape.type) {
-                default:
-                    return 0;
-            }
-        },
+        u_sampler: (_) => 0,
         u_depth: (shape) => shape.depth,
     });
 
@@ -205,10 +225,11 @@ import hints from "./hints.js";
     );
 
     // Handle pick (click)
-    // picked[0] == root, picked[1 < i < 3] == hovered, picked[i >= 3] == focused
+    // picked[0] == root, picked[1 && 2] == hovered, picked[3 && 4] == focused
     const picked = main.drawInfo.u_picked as Int32Array;
+    const srcXZ = [0, 0];
     const trgXZ = [0, 0];
-    const duration = 1000;
+    const duration = 500;
     const step = 1/(duration/(1000/60));
     let progress = 0;
 
@@ -227,8 +248,8 @@ import hints from "./hints.js";
 
         const alpha = easeInOut(progress);
         const offsetXZ = [center[0] - cam[0], center[2] - cam[2]];
-        cam[0] = lerp(cam[0], trgXZ[0], alpha);
-        cam[2] = lerp(cam[2], trgXZ[1], alpha);
+        cam[0] = lerp(srcXZ[0], trgXZ[0], alpha);
+        cam[2] = lerp(srcXZ[1], trgXZ[1], alpha);
         center[0] = cam[0] + offsetXZ[0];
         center[2] = cam[2] + offsetXZ[1];
         main.drawInfo.u_vpm = pm.mul(mat4.lookAt(cam, center, up));
@@ -249,67 +270,102 @@ import hints from "./hints.js";
         panel.style.display = "flex";
         panel.style.left = rect.left + x*rect.width + "px";
         panel.style.top = rect.top + y*rect.height + "px";
-        panel.firstElementChild!.textContent = hints[id].txt;
+        panel.dataset.id = id.toString();
+        panel.firstElementChild!.innerHTML = hints[id].txt;
 
         for (let i = 0; i < panel.lastElementChild!.children.length; i++) {
             (panel.lastElementChild!.children[i] as HTMLElement).dataset.toggled = i < hints[id].rating ? "1" : "0";
         }
     }
 
+    const footer = document.querySelector<HTMLFieldSetElement>("#footer")!;
     main.on("pointerdown", (e: PointerPluginEvent) => {
         if (e.id == 0) {
-            panel.style.display = "none";
-            picked[0] = -1, picked[3] = -1, picked[4] = -1, picked[5] = -1;
-            for (const shape of shapes) {
-                shape.blur();
-                shape.hide();
-            }
+            setInfoPanel(0, 0, -1);
             return;
         }
 
-        switch (true) {
-            case (e.shape.id&0x400) == 0x400:
-                const clip = pm.mul(mat4.lookAt(cam, center, up)).mul(e.shape.world)
-                setInfoPanel(clip[12]/clip[15], clip[13]/clip[15], e.id);
-                return;
-            default:
-                setInfoPanel(0, 0, -1);
-                for (const shape of shapes) {
-                    shape.blur();
-                    shape.hide();
-                }
+        for (const shape of shapes) {
+            shape.blur();
+            shape.hide();
         }
+        setInfoPanel(0, 0, -1);
+        dragging = false;
 
         switch (true) {
-            case (e.shape.id&0x40) == 0x40:
-                picked[0] = 1, picked[3] = 0x40, picked[4] = e.id, picked[5] = -1;
-                shapes[1].focus();
-                shapes[4].show();
-                shapes[4].focus();
+            case (e.id == 1):
+                picked[0] = picked[1] = picked[2] = picked[3] = picked[4] = -1;
+                footer.scrollIntoView({behavior: "smooth"});
+                return;
+            case (e.id == 2):
+            case (e.id == 3):
+                picked[0] = 1, picked[3] = picked[4] = e.id;
+                shapes[map.get(picked[0])!.index].focus();
+                shapes[map.get(picked[3])!.index].focus();
+                shapes[map.get(picked[3])!.index].show();
+                break;
+            case (e.id^0x40) == 0x1: 
+            case (e.id^0x40) == 0x2: 
+            case (e.id^0x40) == 0x3:
+                picked[0] = 1, picked[3] = 0x40, picked[4] = e.id;
+                shapes[map.get(picked[0])!.index].focus();
+                shapes[map.get(picked[3])!.index].focus();
+                shapes[map.get(picked[3])!.index].show();
+                break;
+            case (e.id&0x20) == 0x20:
+            case (e.id&0x30) == 0x30:
+            case (e.id&0x400) == 0x400:
+                shapes[map.get(picked[0])!.index].focus();
+                shapes[map.get(picked[3])!.index].focus();
+                shapes[map.get(picked[3])!.index].show();
+                shapes[map.get(picked[4])!.index].focus();
+                shapes[map.get(picked[4])!.index].show();
+
+                const delta = Math.hypot(e.shape.world[12] - cam[0], e.shape.world[14] - cam[2]);
+                if (delta < 1.15) {
+                    const clip = pm.mul(mat4.lookAt(cam, center, up)).mul(e.shape.world);
+                    setInfoPanel(clip[12]/clip[15], clip[13]/clip[15], e.shape.id);
+                    return;
+                }
+
+                const world = e.shape.world;
+                const id = e.shape.id;
+                requestAnimationFrame(function fn() {
+                    if (progress >= 1) {
+                        return;
+                    }
+
+                    const clip = pm.mul(mat4.lookAt(cam, center, up)).mul(world);
+                    setInfoPanel(clip[12]/clip[15], clip[13]/clip[15], id);
+                    requestAnimationFrame(fn);
+                });
+
+                e.shape = shapes[map.get(picked[4])!.index]
                 break;
             default: {
-                picked[0] = 1, picked[3] = e.id, picked[4] = -1, picked[5] = -1;
-                shapes[1].focus();
-
+                picked[0] = 1, picked[3] = e.id, picked[4] = -1;
+                shapes[map.get(picked[0])!.index].focus();
             }
         }
         e.shape.focus();
         e.shape.show();
 
-        trgXZ[0] = e.shape.world[12] + 0.1554;
-        trgXZ[1] = e.shape.world[14] - 3.5*0.1554;
-        dragging = false;
+        srcXZ[0] = cam[0];
+        srcXZ[1] = cam[2];
+        trgXZ[0] = e.shape.world[12] + 0.125;
+        trgXZ[1] = e.shape.world[14] - 4.24*0.1554;
         requestAnimationFrame(animateCamera);
     });
 
     // Handle pick (hover)
     main.on("pointermove", (e: PointerPluginEvent) => {
+        for (const shape of shapes) {
+            shape.hoverOut();
+            shape.hide();
+        }
+
         if (e.id == 0) {
-            picked[0] = picked[3] > 0 ? 1 : -1, picked[1] = -1, picked[2] = -1;
-            for (const shape of shapes) {
-                shape.hoverOut();
-                shape.hide();
-            }
+            picked[0] = picked[3] > 0 ? 1 : -1, picked[1] = picked[2] = -1;
             return;
         }
         
@@ -320,12 +376,11 @@ import hints from "./hints.js";
                 picked[0] = 1, picked[1] = 0x40, picked[2] = e.id;
                 e.shape.show();
                 e.shape.hoverIn();
-                shapes[4].show();
-                shapes[4].hoverIn();
+                shapes[map.get(picked[1])!.index].show();
+                shapes[map.get(picked[1])!.index].hoverIn();
                 break;
             default:
                 picked[0] = 1, picked[1] = e.id, picked[2] = -1;;
-                main.drawInfo.u_picked = picked;
                 e.shape.show();
                 e.shape.hoverIn();
         }
@@ -333,42 +388,80 @@ import hints from "./hints.js";
 
     // Handle breadcrumbs
     const breadcrumbs = document.querySelector<HTMLDivElement>("#canvas-box .breadcrumbs")!;
+    breadcrumbs.addEventListener("pointerdown", (e: PointerEvent) => {
+        setInfoPanel(0, 0, -1);
+
+        if (e.target == breadcrumbs.lastChild && breadcrumbs.firstChild != breadcrumbs.lastChild) {
+            return;
+        }
+
+        const id = Number.parseInt((e.target as HTMLElement).dataset.id!);
+        switch (id) {
+            case 1:
+                if (picked[4] != -1) {
+                    shapes[map.get(picked[4])!.index].hoverOut();
+                    shapes[map.get(picked[4])!.index].blur();
+                    shapes[map.get(picked[4])!.index].hide();
+                }
+                if (picked[3] != -1) {
+                    shapes[map.get(picked[3])!.index].hoverOut();
+                    shapes[map.get(picked[3])!.index].blur();
+                    shapes[map.get(picked[3])!.index].hide();
+                }
+                picked[0] = picked[1] = picked[2] = picked[3] = picked[4] = -1;
+                breadcrumbs.replaceChildren(breadcrumbs.firstChild!);
+                break;
+            case 0x40:
+                if (picked[4] != -1) {
+                    shapes[map.get(picked[4])!.index].hoverOut();
+                    shapes[map.get(picked[4])!.index].blur();
+                    shapes[map.get(picked[4])!.index].hide();
+                }
+                picked[2] = picked[4] = -1;
+                breadcrumbs.replaceChildren(breadcrumbs.firstChild!, breadcrumbs.children[1]);
+                break;
+            case 2: case 3:
+                picked[2] = picked[4] = -1;
+                breadcrumbs.replaceChildren(breadcrumbs.firstChild!, breadcrumbs.children[1]);
+        }
+
+        srcXZ[0] = cam[0];
+        srcXZ[1] = cam[2];
+        trgXZ[0] = shapes[map.get(id)!.index].world[12] + 0.125;
+        trgXZ[1] = shapes[map.get(id)!.index].world[14] - 3.5*0.1554;
+        dragging = false;
+        requestAnimationFrame(animateCamera);        
+    });
+
     main.on("done", () => {
-        breadcrumbs.textContent = "";
-        let a = "", b = "";
+        if (picked[1] == -1  && picked[3] == -1) {
+            breadcrumbs.replaceChildren(breadcrumbs.firstChild!);
+            return;
+        }
 
         // focused
+        const a = [breadcrumbs.firstChild!];
         for (const shape of shapes) {
             if (picked.slice(3).includes(shape.id)) {
-                a += " \u21FE " + msgs.get(shape.id);
+                const span = document.createElement("span");
+                span.textContent = " \u21FE " + map.get(shape.id)?.txt;
+                span.dataset.id = shape.id.toString();
+                a.push(span);
             }
         }
         // hovered
+        const b = [breadcrumbs.firstChild!];
         for (const shape of shapes) {
             if (picked.slice(1, 3).includes(shape.id)) {
-                b += " \u21FE " + msgs.get(shape.id);
+                const span = document.createElement("span");
+                span.textContent = " \u21FE " + map.get(shape.id)?.txt;
+                span.dataset.id = shape.id.toString();
+                b.push(span);
             }
         }
 
-        breadcrumbs.textContent = msgs.get(0) + (b.length > 0 ? b : a);
+        breadcrumbs.replaceChildren(...(b.length > 1 ? b : a));
     });
 
-    // Handle recenter
-    document.querySelector("#canvas-box #center")!.addEventListener("pointerdown", () => {
-        // Reset pick
-        panel.style.display = "none";
-        picked[0] = -1, picked[1] = -1, picked[2] = -1;
-        picked[3] = -1, picked[4] = -1, picked[5] = -1;
-        for (const shape of shapes) {
-            shape.hoverOut();
-            shape.blur();
-            shape.hide();
-        }
-
-        // Rest camera
-        trgXZ[0] = 0.2;
-        trgXZ[1] = -1.45;
-        dragging = false;
-        requestAnimationFrame(animateCamera);
-    });
+    (breadcrumbs.firstChild as HTMLElement)!.dataset.id = "1";
 }())
