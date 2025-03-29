@@ -1,107 +1,111 @@
 export default {
-    0x20: {
-        txt: "Critical thinking",
+    0x200: {
+        txt: "<b>Critical thinking</b><br/>",
         rating: 5,
     },
-    0x21: {
-        txt: "Communication.",
+    0x201: {
+        txt: "<b>Communication</b><br/>",
         rating: 3,
     },
-    0x22: {
-        txt: "Problem solving",
+    0x202: {
+        txt: "<b>Problem solving</b><br/>",
         rating: 4,
     },
-    0x23: {
-        txt: "Creativity",
+    0x203: {
+        txt: "<b>Planning</b><br/>",
+        rating: 4,
+    },
+    0x204: {
+        txt: "<b>Creativity</b><br/>",
         rating: 3,
     },
-    0x24: {
-        txt: "Planning",
-        rating: 4,
-    },
-    0x30: {
-        txt: "<b>mypage</b>\n\nThis page. Nothing fancy, it just uses standard web APIs so that it can run in any browser. \n\n<a href='' target='_blank'>page</a><a href='https://github.com/TimRJensen/mypage' target='_blank'>source</a>",
+    0x210: {
+        txt: "I enjoy watching football, olympic weightlifting & strong-man competitions.<br/><br/>Besides sports, I enjoy listening to music. I like all kinds of genres and can sit for hours just listening.<br/><br/>I also sometimes like to read, but mostly the classics or fantasy novels.",
         rating: -1,
     },
-    0x31: {
-        txt: "<b>Aruco generator</b>\n\nA very simple app, that can generate aruco codes. The codes are mainly used in robotics.\n\n<a href='https://aruco-generator.sliplane.app/' target='_blank'>page</a><a href='https://github.com/TimRJensen/aruco-generator' target='_blank'>source</a>",
+    0x300: {
+        txt: "<b>mypage</b><br/><br/>This page. Nothing fancy, it just uses standard web APIs so that it can run in any browser.<br/><br/><a href='#canvas' target='_self'>page</a><a href='https://github.com/TimRJensen/mypage' target='_blank'>source</a>",
         rating: -1,
     },
-    0x32: {
-        txt: "<b>Breakout & Galage</b>\n\nA cool little project we did at the institute, where we recreated old arcade games.\n\n<a href='https://github.com/TimRJensen/DIKUGames' target='_blank'>source</a>",
+    0x301: {
+        txt: "<b>Aruco generator</b><br/><br/>A very simple app, that can generate aruco codes. The codes are mainly used in robotics.<br/><br/><a href='https://aruco-generator.sliplane.app/' target='_blank'>page</a><a href='https://github.com/TimRJensen/aruco-generator' target='_blank'>source</a>",
+        rating: -1,
+    },
+    0x302: {
+        txt: "<b>Breakout & Galage</b><br/><br/>A cool little project we did at the institute, where we recreated old arcade games.<br/><br/><a href='https://github.com/TimRJensen/DIKUGames' target='_blank'>source</a>",
         rating: -1,
     },
     0x410: {
-        txt: "Every developer knows some Git. I personally know about 12 commands, where the first 4 are stage, commit, pull and push. The last eight are for when I messed up.",
+        txt: "<b>Git</b><br/><br/>I know about 12 Git commands, where the first 4 are stage, commit, pull and push. The last eight are for when I messed up.",
         rating: 3,
     },
     0x411: {
-        txt: "Docker is one of the best tools that has been released in the last decade. It makes it so easy to spin up a new environment and share it with others. Most of the projects I work on are containerized.",
+        txt: "<b>Docker</b><br/><br/>I love docker. It makes it so easy to spin up a new environment and share it with others. Most of the projects I work on are containerized.",
         rating: 4,
     },
     0x412: {
-        txt: "I found SQL frustrating in the beginning, but once I got the hang of multiple joins and views, the appeal of SQL became quite clear to me.",
+        txt: "<b>PostgreSQL</b><br/><br/>The databases I've worked with are mostly ones I created, so I'm quite familiar with schemas, views and how to query data.",
         rating: 5,
     },
     0x413: {
-        txt: "I remember when it took the better part of a day to get a React project up an running. Thankfully a lot of tools were released to ease the processs and I think that NextJS is the best one out there.",
-        rating: 4,
+        txt: "<b>Next.js</b><br/><br/>I've used Next.js a couple of times and it's certainly a good framework. I however find it a bit opinionated and prefer to use a custom setup.",
+        rating: 3,
     },
     0x414: {
-        txt: "Deno ships with a lot of packages, that I often found myself installing in NodeJS. Because of this, I quickly adopted Deno as my go-to environment to get a project up and running quickly.",
+        txt: "<b>Deno</b><br/><br/>Packages that I often found myself installing in Node.js are shipped with Deno by default. Because of that, I quickly adopted Deno as my go-to environment.",
         rating: 5,
     },
     0x415: {
-        txt: "I did not really enjoy working with NodeJS, but that was before they got the async flavour of their API. I've mostly used it to spin up an Express server and small CLI scripts.",
+        txt: "<b>Node.js</b><br/><br/>I've mostly used Node.js to spin up an Express server, but I've also made some CLI scripts to automate simple tasks.",
         rating: 3,
     },
     0x420: {
-        txt: "I love the idea of taking critical logic and writing it in an all purpose language. I've worked with WebAssembly in Go and that was overall a good experience.",
+        txt: "<b>WebAssembly</b><br/><br/>Dunno.",
         rating: 4,
     },
     0x421: {
-        txt: "I know the CSS baseline and I do try to keep up with the latest features. I worked with preprocessors like SASS and LESS, but I prefer CSS-in-JS.",
+        txt: "<b>CSS</b><br/><br/>I know the CSS baseline and I try to keep up with the latest features. I worked with preprocessors like SASS and LESS, but I prefer CSS-in-JS.",
         rating: 5,
     },
     0x422: {
-        txt: "! + ⏎\n\nAll kidding aside, I'm quite familiar with HTML, including semantic elements and specialized input elements.",
+        txt: "<b>HTML</b><br/><br/>! + ⏎<br/><br/>All kidding aside, I'm quite familiar with HTML, including semantic elements and specialized input elements.",
         rating: 4,
     },
     0x423: {
-        txt: "The few small projects I've done with Vue has been satisfying. I like the simplicity of the framework and that it doesn't include all the frustration found in other directive driven frameworks.",
-        rating: 2,
+        txt: "<b>Vue.js</b><br/><br/>I like the simplicity of Vue and that it doesn't include all the frustration found in other directive driven frameworks. However, I've only made very simple projects with it.",
+        rating: 3,
     },
     0x424: {
-        txt: "I like React for its unopinionated minimal API. I've been using it extensively, and when they switched from class components to functional components, I was hooked.",
+        txt: "<b>React</b><br/><br/>I've been using react extensively and I really like it for its unopinionated minimal API and emphasis on composition.",
         rating: 5,
     },
     0x425: {
-        txt: "Typescript provides some type safety, which is fine, but more importantly, it provides a lot of context right in the editor. I can't always remember the idea behind what I wrote some months ago, so this can be a big help.",
+        txt: "<b>TypeScript</b><br/><br/>Type-safety is fine, but more importantly, with a quick glance, it provides a lot of context right in your editor, which often is invaluable.",
         rating: 5,
     },
     0x426: {
-        txt: "I worked with libraries such as jQuery, Loadash, Underscore.js, Knockout, Bootstrap and many more. I'm also confident with modern API, like observers, webcomponents, etc.",
+        txt: "<b>JavaScript</b><br/><br/>I'm quite confident with JavaScript and I've worked with libraries such as jQuery, Loadash, Underscore, Knockout, Bootstrap and many more.",
         rating: 5
     },
     0x430: {
-        txt: "Go is without a contest my favorite language. It may be a bit verbose, but you end up with programs that are stable, and easy to maintain. Not to mention concurrency is so easy to work with.",
+        txt: "<b>Go</b><br/><br/>This is without a contest my favorite language. It may be a bit verbose, but you end up with programs that are stable, and easy to maintain. Not to mention that concurrency in Go is awesome.",
         rating: 5,
     },
     0x431: {
-        txt: "I've worked with most of the popular libraries, such as Pandas, Numpy, Matplotlib, Scikit-learn, however they are so vast, I know at best half of what they can do.",
-        rating: 2,
+        txt: "<b>Python</b><br/><br/>I've worked with most of the popular libraries, like Pandas, Numpy, Matplotlib, Scikit-learn, etc., however they are so vast that I know at best half of what they do.",
+        rating: 3,
     },
     0x432: {
-        txt: "It's a shame that F# isn't more widely used, because the typesystem is outstanding. Unions are so useful and working with them is a breeze.",
+        txt: "<b>F#</b><br/><br/>It's a shame that F# isn't more widely used, because the typesystem is outstanding. Unions with match statements are such a versatile feature.",
         rating: 3,
     },
     0x433: {
-        txt: "I'm not a huge fan of strictly OOP languages, but C# does a lot of things right. I really like how properties are defined and LINQ is a very powerful feature.",
-        rating: 3,
+        txt: "<b>C#</b><br/><br/>I'm not a huge fan of strictly OOP languages, but C# does a lot of things right, so I actually don't mind that I can't define an isolated function.",
+        rating: 4,
     },
     0x434: {
-        txt: "C used to be my favorite language. The freedom it provides is unmatched and the few structures of the language, really gives you a fundamental understanding of how code works. It also made me appreciate a garbage collector.",
+        txt: "<b>C</b><br/><br/>The freedom C provides is unmatched and the few structures of the language, really gives you a fundamental understanding of how code works. It also made me appreciate a garbage collector.",
         rating: 4,
     },
 };
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaGludHMuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi90cy9oaW50cy50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFJQSxlQUFlO0lBQ1gsSUFBSSxFQUFFO1FBQ0YsR0FBRyxFQUFFLG1CQUFtQjtRQUN4QixNQUFNLEVBQUUsQ0FBQztLQUNaO0lBQ0QsSUFBSSxFQUFFO1FBQ0YsR0FBRyxFQUFFLGdCQUFnQjtRQUNyQixNQUFNLEVBQUUsQ0FBQztLQUNaO0lBQ0QsSUFBSSxFQUFFO1FBQ0YsR0FBRyxFQUFFLGlCQUFpQjtRQUN0QixNQUFNLEVBQUUsQ0FBQztLQUNaO0lBQ0QsSUFBSSxFQUFFO1FBQ0YsR0FBRyxFQUFFLFlBQVk7UUFDakIsTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELElBQUksRUFBRTtRQUNGLEdBQUcsRUFBRSxVQUFVO1FBQ2YsTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELElBQUksRUFBRTtRQUNGLEdBQUcsRUFBRSwrTkFBK047UUFDcE8sTUFBTSxFQUFFLENBQUMsQ0FBQztLQUNiO0lBQ0QsSUFBSSxFQUFFO1FBQ0YsR0FBRyxFQUFFLGtSQUFrUjtRQUN2UixNQUFNLEVBQUUsQ0FBQyxDQUFDO0tBQ2I7SUFDRCxJQUFJLEVBQUU7UUFDRixHQUFHLEVBQUUsaU1BQWlNO1FBQ3RNLE1BQU0sRUFBRSxDQUFDLENBQUM7S0FDYjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxtS0FBbUs7UUFDeEssTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSx5TUFBeU07UUFDOU0sTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSw0SUFBNEk7UUFDakosTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSx3TUFBd007UUFDN00sTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSw2TEFBNkw7UUFDbE0sTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxrTEFBa0w7UUFDdkwsTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxnS0FBZ0s7UUFDckssTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxtSkFBbUo7UUFDeEosTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSx1SEFBdUg7UUFDNUgsTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxtTUFBbU07UUFDeE0sTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxzS0FBc0s7UUFDM0ssTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSwrTkFBK047UUFDcE8sTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSw0S0FBNEs7UUFDakwsTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxnTUFBZ007UUFDck0sTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxxS0FBcUs7UUFDMUssTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSw2SUFBNkk7UUFDbEosTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxnS0FBZ0s7UUFDckssTUFBTSxFQUFFLENBQUM7S0FDWjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSxpT0FBaU87UUFDdE8sTUFBTSxFQUFFLENBQUM7S0FDWjtDQUNhLENBQUMifQ==
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaGludHMuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi90cy9oaW50cy50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFJQSxlQUFlO0lBQ1gsS0FBSyxFQUFFO1FBQ0gsR0FBRyxFQUFFLCtCQUErQjtRQUNwQyxNQUFNLEVBQUUsQ0FBQztLQUNaO0lBQ0QsS0FBSyxFQUFFO1FBQ0gsR0FBRyxFQUFFLDJCQUEyQjtRQUNoQyxNQUFNLEVBQUUsQ0FBQztLQUNaO0lBQ0QsS0FBSyxFQUFFO1FBQ0gsR0FBRyxFQUFFLDZCQUE2QjtRQUNsQyxNQUFNLEVBQUUsQ0FBQztLQUNaO0lBQ0QsS0FBSyxFQUFFO1FBQ0gsR0FBRyxFQUFFLHNCQUFzQjtRQUMzQixNQUFNLEVBQUUsQ0FBQztLQUNaO0lBQ0QsS0FBSyxFQUFFO1FBQ0gsR0FBRyxFQUFFLHdCQUF3QjtRQUM3QixNQUFNLEVBQUUsQ0FBQztLQUNaO0lBQ0QsS0FBSyxFQUFFO1FBQ0gsR0FBRyxFQUFFLHNSQUFzUjtRQUMzUixNQUFNLEVBQUUsQ0FBQyxDQUFDO0tBQ2I7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsZ1BBQWdQO1FBQ3JQLE1BQU0sRUFBRSxDQUFDLENBQUM7S0FDYjtJQUNELEtBQUssRUFBRTtRQUNILEdBQUcsRUFBRSw4UkFBOFI7UUFDblMsTUFBTSxFQUFFLENBQUMsQ0FBQztLQUNiO0lBQ0QsS0FBSyxFQUFFO1FBQ0gsR0FBRyxFQUFFLDZNQUE2TTtRQUNsTixNQUFNLEVBQUUsQ0FBQyxDQUFDO0tBQ2I7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsZ0pBQWdKO1FBQ3JKLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsb0tBQW9LO1FBQ3pLLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsdUpBQXVKO1FBQzVKLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsd0tBQXdLO1FBQzdLLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsa0xBQWtMO1FBQ3ZMLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsOElBQThJO1FBQ25KLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsb0NBQW9DO1FBQ3pDLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsb0tBQW9LO1FBQ3pLLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsa0pBQWtKO1FBQ3ZKLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsdU1BQXVNO1FBQzVNLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsNklBQTZJO1FBQ2xKLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsMEtBQTBLO1FBQy9LLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsdUtBQXVLO1FBQzVLLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsbU5BQW1OO1FBQ3hOLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsK0xBQStMO1FBQ3BNLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsbUtBQW1LO1FBQ3hLLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsd0tBQXdLO1FBQzdLLE1BQU0sRUFBRSxDQUFDO0tBQ1o7SUFDRCxLQUFLLEVBQUU7UUFDSCxHQUFHLEVBQUUsK01BQStNO1FBQ3BOLE1BQU0sRUFBRSxDQUFDO0tBQ1o7Q0FDYSxDQUFDIn0=

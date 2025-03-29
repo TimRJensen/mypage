@@ -83,7 +83,7 @@ export declare class Plane extends Shape {
     readonly depth: number;
     constructor(gl: WebGL2RenderingContext, depth: number, { id, type, pos, rotation, scale, color, pick_color, display, }: ShapeProps);
 }
-interface CompositeProps extends Omit<ShapeProps, "color" | "pick_color"> {
+interface CompositeProps extends Omit<ShapeProps, "color"> {
     shapes?: Array<Shape>;
 }
 export declare class Composite implements Drawable<Shape> {
@@ -123,15 +123,11 @@ export declare class Edge extends Composite {
     constructor(gl: WebGL2RenderingContext, start: Array<number>, end: Array<number>);
 }
 export declare class Logo extends Composite {
-    constructor(gl: WebGL2RenderingContext, depth: number, { id, pos }: CompositeProps);
+    constructor(gl: WebGL2RenderingContext, depth: number, { id, display, pos, scale }: CompositeProps);
     draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
 }
 export declare class Text extends Composite {
     constructor(gl: WebGL2RenderingContext, depth: number, { id, display, pos, rotation }: CompositeProps);
-    draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
-}
-export declare class Skill extends Composite {
-    constructor(gl: WebGL2RenderingContext, depth: number, { id, pos, rotation, scale }: CompositeProps);
     draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
 }
 export declare class Project extends Composite {

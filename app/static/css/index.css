@@ -251,7 +251,11 @@ body {
     hyphens: auto;
     font-size: 18px;
     z-index: 1;
-    transform: translate(-50%, -92.5%) perspective(500px) rotateX(-5deg);
+    transform: translate(-50%, -100%) perspective(500px) rotateX(-5deg);
+}
+
+#canvas-box .info-box[data-id="528"] {
+    transform: translate(-50%, -127.5%) perspective(500px) rotateX(-5deg);
 }
 
 #canvas-box .info-box .rating {
@@ -261,8 +265,9 @@ body {
     gap: 0.5rem;
 }
 
-#canvas-box .info-box[data-id="48"] > .rating,
-#canvas-box .info-box[data-id="49"] > .rating {
+#canvas-box .info-box[data-id="528"] > .rating,
+#canvas-box .info-box[data-id="768"] > .rating,
+#canvas-box .info-box[data-id="769"] > .rating {
     display: none;
 }
 

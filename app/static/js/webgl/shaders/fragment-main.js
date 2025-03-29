@@ -43,7 +43,7 @@ void main() {
         return;
     }
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 5; i++) {
         if (u_id != u_picked[i]) {
             continue;
         }
