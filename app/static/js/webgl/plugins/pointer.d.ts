@@ -3,10 +3,14 @@ import { PluginLike, PluginEventHandler, PluginEvent, Program, FrameBufferObject
 export declare class PointerPluginEvent extends PluginEvent<Shape> {
     id: number;
     composite: Shape;
-    constructor(type: string, { id, shape, composite }: {
+    clientX: number;
+    clientY: number;
+    constructor(type: string, { id, shape, composite, clientX, clientY }: {
         id: number;
         shape: Shape;
         composite: Shape;
+        clientX: number;
+        clientY: number;
     });
 }
 export type PointerPluginHandler = PluginEventHandler<Shape, PointerPluginEvent>;

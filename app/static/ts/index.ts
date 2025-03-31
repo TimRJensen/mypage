@@ -2,7 +2,7 @@ import {mat4, vec3} from "./linalg.js";
 import {Program} from "./webgl/core.js";
 import {PointerPlugin, PointerPluginEvent} from "./webgl/plugins/pointer.js";
 import {BloomPlugin} from "./webgl/plugins/bloom.js";
-import {Grid, Composite, RootNode, Node, Edge, Logo, Text, Project} from "./webgl/geometry.js";
+import {Grid, Composite, RootNode, Node, Edge, Logo, Text, Project, Circle, ShapeType, Plane} from "./webgl/geometry.js";
 import vs from "./webgl/shaders/vertex-main.js";
 import fs from "./webgl/shaders/fragment-main.js";
 import hints from "./hints.js";
@@ -28,7 +28,7 @@ import hints from "./hints.js";
         throw new Error("WebGL2 is not supported");
     }
     // Shapes
-    const shapes = [//col: 0.0929 row: 0.1071
+    const shapes = [//col == row == 0.1238
         // Grid
         new Grid(gl, 1.3, 1.5, 7, {id: 0, color: [151, 101, 205]}),
         // Root
@@ -38,7 +38,7 @@ import hints from "./hints.js";
         // Backend
         new Composite(gl, {id: 0x41, display: "fixed", pos: [-0.6065, 0.0, 0.2601], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [-0.6065, 0.06, 0.2601], [0.0, 0.06, -0.11]),
+            new Edge(gl, [-0.6065, 0.06, 0.2601], [0.0, 0.06, -0.1113]),
             new Logo(gl, 11, {id: 0x410, pos: [0.2331, 0.1, 0.4038]}),
             new Logo(gl, 9, {id: 0x411, pos: [0.0809, 0.1, 0.4591]}),
             new Logo(gl, 17, {id: 0x412, pos: [-0.0810, 0.1, 0.4591]}),
@@ -49,7 +49,7 @@ import hints from "./hints.js";
         // Frontend
         new Composite(gl, {id: 0x42, display: "fixed", pos: [0.0, 0.0, 0.5077], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.0, 0.06, 0.5589], [0.0, 0.06, -0.0]),
+            new Edge(gl, [0.0, 0.06, 0.5589], [0.0, 0.06, -0.0863]),
             new Logo(gl, 22, {id: 0x420, pos: [0.4381, 0.1, 0.1595]}),
             new Logo(gl, 7, {id: 0x421, pos: [0.3391, 0.1, 0.3199]}),
             new Logo(gl, 13, {id: 0x422, pos: [0.1846, 0.1, 0.4281]}),
@@ -61,7 +61,7 @@ import hints from "./hints.js";
         // All purpose
         new Composite(gl, {id: 0x43, display: "fixed", pos: [0.6065, 0.00, 0.2601], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [0.6065, 0.06, 0.2601], [0.0, 0.06, -0.11]),
+            new Edge(gl, [0.6065, 0.06, 0.2601], [0.0, 0.06, -0.1113]),
             new Logo(gl, 12, {id: 0x430, pos: [-0.2331, 0.1, 0.4038]}),
             new Logo(gl, 18, {id: 0x431, pos: [-0.0406, 0.1, 0.4644]}),
             new Logo(gl, 10, {id: 0x432, pos: [0.1595, 0.1, 0.4381]}),
@@ -70,38 +70,43 @@ import hints from "./hints.js";
         ]}),
         // Technical skills
         new Composite(gl, {id: 0x4, display: "fixed", pos: [0.0, 0.0, -0.1113], shapes: [
+            new Text(gl, 11, {pos: [0.0, 0.001, -0.1113], rotation: [Math.PI, 0.0, 0.0]}),
+            new Text(gl, 2, {display: "hidden", pos: [-0.53, 0.001,  0.33], rotation: [Math.PI, -Math.PI/4, 0.0]}),
+            new Text(gl, 8, {display: "hidden", pos: [0.0, 0.001, 0.55], rotation: [Math.PI, 0.0, 0.0]}),
+            new Text(gl, 1, {display: "hidden", pos: [0.51, 0.001,  0.31], rotation: [Math.PI, Math.PI/4, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [0.0, 0.06, -0.1113], [0.0, 0.06, -0.728]),
-            new Text(gl, 5, {pos: [0.0, 0.0, -0.1], rotation: [Math.PI, 0.0, 0.0]}),
-            new Text(gl, 1, {display: "hidden", pos: [-0.53, 0.0,  0.33], rotation: [Math.PI, -Math.PI/4, 0.0]}),
-            new Text(gl, 2, {display: "hidden", pos: [0.0, 0.0, 0.55], rotation: [Math.PI, 0.0, 0.0]}),
-            new Text(gl, 0, {display: "hidden", pos: [0.51, 0.0,  0.31], rotation: [Math.PI, Math.PI/4, 0.0]}),
         ]}),
         // Projects
         new Composite(gl, {id: 0x3, display: "fixed", pos: [0.4820, 0.0, -0.4819], shapes: [
+            new Text(gl, 10, {pos: [-0.045, 0.001, -0.045], rotation: [Math.PI, Math.PI/4, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [0.4820, 0.06, -0.4819], [0.0, 0.06, -0.728]),
-            new Text(gl, 4, {pos: [-0.045, 0.0, -0.045], rotation: [Math.PI, Math.PI/4, 0.0]}),
             new Project(gl, 1, {id: 0x300, pos: [0.3885, 0.0, 0.0], rotation: [-Math.PI/2, 0.0, 0.5]}),
             new Project(gl, 0, {id: 0x301, pos: [0.2747, 0.0, 0.1500], rotation: [-Math.PI/2, 0.0, 0.5]}),
         ]}),
         // About me
         new Composite(gl, {id: 0x21, display: "fixed", pos: [-1.1018, 0.0, 0.0125], shapes: [
             new Node(gl, {}),
-            new Edge(gl, [-1.1018, 0.06, 0.0125], [-0.4820, 0.06, -0.4814]),
+            new Edge(gl, [-1.1018, 0.06, 0.0125], [-0.5020, 0.06, -0.4620]),
         ]}),
         // Personal skills
-        new Composite(gl, {id: 0x2, display: "fixed", pos: [-0.4820, 0.0, -0.4814], shapes: [
+        new Composite(gl, {id: 0x2, display: "fixed", pos: [-0.4820, 0.001, -0.4820], shapes: [
+            new Text(gl, 9, {pos: [0.077, 0.0, -0.07], rotation: [Math.PI, -Math.PI/4, 0.0]}),
+            new Text(gl, 0, {display: "hidden", pos: [-0.5500, 0.0, 0.4195], rotation: [Math.PI, -Math.PI/4, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [-0.4820, 0.06, -0.4819], [0.0, 0.06, -0.728]),
-            new Text(gl, 3, {pos: [0.077, 0.0, -0.07], rotation: [Math.PI, -Math.PI/4, 0.0]}),
             new Logo(gl, 3, {id: 0x204, pos: [0.0619, 0.1, 0.3885], scale: [1.1, 1.0, 1.1]}),
             new Logo(gl, 23, {id: 0x203, pos: [-0.0868, 0.1, 0.3589], scale: [0.75, 1.0, 0.75]}),
             new Logo(gl, 4, {id: 0x202, pos: [-0.2128, 0.1, 0.2747], scale: [0.75, 1.0, 0.75]}),
             new Logo(gl, 2, {id: 0x201, pos: [-0.2881, 0.1, 0.1500], scale: [1.25, 1.0, 1.25]}),
             new Logo(gl, 1, {id: 0x200, pos: [-0.3266, 0.1, 0.0], scale: [0.75, 1.0, 0.75]}),
         ]}),
-
+        // Cloud
+        new Composite(gl, {id: 0x5, display: "fixed",  pos: [0.0, 0.0, 1.35], shapes: [
+            new Text(gl, 3, {id: -1, pos: [0.0, 0.3714, 0.0], scale: [3.0, 1.0, 1.5]}),
+            new Circle(gl, {id: 0,display: "fixed", type: ShapeType.SHADOW, pos: [0.0, 0.0015, 0.0], color: [0, 0, 0], /*scale: [3.2, 1.0, 1.5]*/}),
+        ]}),
     ];
     const ROOT = 0x1;
     const PERSONAL_SKILLS = 0x2;
@@ -113,8 +118,10 @@ import hints from "./hints.js";
         [0x0, {txt: "@", index: 0}],
         [0x1, {txt: "contact", index: 1}],
         [0x2, {txt: "personal skills", index: 8}],
+        [0x20, {txt: "personal skills", index: 8}],
         [0x21, {txt: "about me", index: 7}],
         [0x3, {txt: "projects", index: 6}],
+        [0x30, {txt: "projects", index: 6}],
         [0x4, {txt: "technical skills", index: 5}],
         [0x41, {txt: "backend", index: 2}],
         [0x42, {txt: "frontend", index: 3}],
@@ -125,7 +132,7 @@ import hints from "./hints.js";
     const cam = new vec3(0.2, 0.4, -1.45);
     const center = new vec3(0, 0, 0);
     const up = new vec3(0, 1, 0);
-    const pm = mat4.perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 50)
+    const pm = mat4.perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 10)
     const vpm = pm.mul(mat4.lookAt(cam, center, up));
 
     // Create the WebGL program.
@@ -145,7 +152,7 @@ import hints from "./hints.js";
             "/static/imgs/atlas-grid-texts.png": {
                 width: 512,
                 height: 256,
-                depth: 6,
+                depth: 12,
             },
             "/static/imgs/atlas-projects.png": {
                 width: 512,
@@ -168,7 +175,7 @@ import hints from "./hints.js";
         u_model: (shape) => shape.world,
         u_color: (shape) => shape.color,
         u_pick_color: (shape) => shape.pick_color,
-        u_depth: (shape) => shape.depth,
+        u_depth: (shape) => shape.id == 0x5 ? cloudState : shape.depth,
     });
 
     // Handle drag
@@ -288,8 +295,9 @@ import hints from "./hints.js";
 
     const footer = document.querySelector<HTMLFieldSetElement>("#footer")!;
     main.on("pointerdown", function fn(e: PointerPluginEvent) {
-        if (e.id == 0) {
-            setInfoPanel(0, 0, -1);
+        setInfoPanel(0, 0, -1);
+
+        if (e.id == 0 || e.id == 0x5) {
             return;
         }
 
@@ -297,7 +305,6 @@ import hints from "./hints.js";
             shape.blur();
             shape.hide();
         }
-        setInfoPanel(0, 0, -1);
 
         switch (true) {
             case e.id == ROOT:
@@ -321,17 +328,24 @@ import hints from "./hints.js";
             case e.id>>8 == PERSONAL_SKILLS:
             case e.id>>8 == PROJECTS:
             case e.id>>8 == TECHNICAL_SKILLS:
-                shapes[map.get(picked[0])!.index].focus();
-                shapes[map.get(picked[3])!.index].focus();
-                shapes[map.get(picked[3])!.index].show();
-                if (picked[4] != -1) {
-                    shapes[map.get(picked[4])!.index].focus();
-                    shapes[map.get(picked[4])!.index].show();
+                for (const id of picked) {
+                    if (id == -1) {
+                        continue;
+                    }
+
+                    if (id == ABOUT_ME && e.id != ABOUT_ME<<4) {
+                        picked[0] = ROOT, picked[3] = PERSONAL_SKILLS, picked[4] = -1;
+                        continue;
+                    }
+
+                    shapes[map.get(id)!.index].focus();
+                    shapes[map.get(id)!.index].show();
                 }
 
                 const delta = Math.hypot(e.shape.world[12] - cam[0], e.shape.world[14] - cam[2]);
-                if (delta < 1.15) {
+                if (delta < 1.1857) {
                     const clip = pm.mul(mat4.lookAt(cam, center, up)).mul(e.shape.world);
+                    dragging = false;
                     setInfoPanel(clip[12]/clip[15], clip[13]/clip[15], e.id);
                     return;
                 }
@@ -348,11 +362,8 @@ import hints from "./hints.js";
                     requestAnimationFrame(fn);
                 });
 
-                if (e.id>>8 == PERSONAL_SKILLS && e.id>>4 != ABOUT_ME) {
-                    e.shape = shapes[map.get(picked[3])!.index];
-                } else {
-                    e.shape = shapes[map.get(picked[4])!.index];
-                }
+                e.shape = shapes[map.get(e.id>>4)!.index];
+
                 break;
             default: {
                 picked[0] = ROOT, picked[3] = e.id, picked[4] = -1;
@@ -377,15 +388,13 @@ import hints from "./hints.js";
             shape.hide();
         }
 
-        if (e.id == 0) {
-            picked[0] = picked[3] > 0 ? 1 : -1, picked[1] = picked[2] = -1;
-            return;
-        }
-        
         switch (true) {
+            case e.id == 0x0:
             case e.id>>8 == PERSONAL_SKILLS:
             case e.id>>8 == PROJECTS:
             case e.id>>8 == TECHNICAL_SKILLS:
+            case e.id == 0x5:
+                picked[0] = picked[1] = picked[2] = -1;
                 return;
             case e.id>>4 == PERSONAL_SKILLS:
                 picked[0] = ROOT, picked[1] = PERSONAL_SKILLS, picked[2] = e.id;
@@ -405,6 +414,78 @@ import hints from "./hints.js";
                 picked[0] = ROOT, picked[1] = e.id, picked[2] = -1;;
                 e.shape.show();
                 e.shape.hoverIn();
+        }
+    });
+
+    // Handle cloud
+    let cloudState = 3;
+    let cloudDrag = false;
+    let cloudTrigger = 0;
+    main.on("pointerdown", (e: PointerPluginEvent) => {
+        if (e.id != 0x5 || cloudState != 3) {
+            return;
+        }
+
+        const rnd = Math.random();
+        switch (true) {
+            case rnd < 0.25:
+                cloudState = 4;
+                break;
+            case rnd < 0.5:
+                cloudState = 5;
+                break;
+            case rnd < 0.75:
+                cloudState = 6;
+                break;
+            case rnd < 1:
+            case cloudTrigger == 10:
+                cloudState = 7;
+                cloudTrigger = 0;
+                break;
+        }
+
+        dragging = false;
+        cloudDrag = true;
+        cloudTrigger++;
+        setTimeout(() => cloudState = 3, 250);
+    });
+
+    main.on("pointerup", () => {
+        cloudDrag = false;
+    });
+
+    main.on("pointermove", (e: PointerPluginEvent) => {
+        return;
+
+        if (!cloudDrag) {
+            return;
+        }
+
+        const dx = (e.clientX/canvas.width);
+        const dz = (e.clientY/canvas.height)*2.5;
+        shapes[9].world[12] += dx;
+        shapes[9].world[14] -= dz;
+        for (const child of shapes[9]) {
+            child.world[12] = shapes[9].world[12];
+            child.world[14] = shapes[9].world[14];
+        }
+    });
+
+    let cloudDelta = 0.0005;
+    let turn = Math.random();
+    main.on("done", () => {
+        if ((cloudDelta > 0.0 && shapes[9].world[12] >= turn) || (cloudDelta < 0.0 && shapes[9].world[12] <= -turn)) {
+            cloudDelta = -cloudDelta;
+            turn = Math.random();
+        }
+        const amplitude = 0.0005;  // Max vertical displacement
+        const frequency = 1;  // Adjust speed of up/down motion
+        const time = performance.now() / 1000;  // Time in seconds
+        shapes[9].world[12] += cloudDelta;
+        shapes[9].world[13] += Math.sin(time * frequency) * amplitude;
+        for (const child of shapes[9]) {
+            child.world[12] += cloudDelta;
+            child.world[13] += child instanceof Plane ? Math.sin(time * frequency) * amplitude : 0.0;
         }
     });
 

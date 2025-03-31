@@ -8,9 +8,7 @@ export declare enum ShapeType {
     SHADOW = 16,
     TEXTURED = 1,
     LOGO = 1,
-    TEXT = 3,
-    SKILL = 3,
-    PROJECT = 5
+    TEXT = 3
 }
 type ShapeProps = {
     id?: number;
@@ -127,7 +125,7 @@ export declare class Logo extends Composite {
     draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
 }
 export declare class Text extends Composite {
-    constructor(gl: WebGL2RenderingContext, depth: number, { id, display, pos, rotation }: CompositeProps);
+    constructor(gl: WebGL2RenderingContext, depth: number, { id, display, pos, scale, rotation }: CompositeProps);
     draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
 }
 export declare class Project extends Composite {

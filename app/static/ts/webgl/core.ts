@@ -173,6 +173,7 @@ export function createTextureArrayBuffer(gl: WebGL2RenderingContext, data: Array
     gl.bufferData(gl.PIXEL_UNPACK_BUFFER, data, gl.STATIC_DRAW);
     gl.pixelStorei(gl.UNPACK_ROW_LENGTH, width);
     gl.pixelStorei(gl.UNPACK_IMAGE_HEIGHT, height);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
     for (let i = 0; i < info.depth; i++) {
         const row = Math.floor(i/size)*info.height;
         const col = (i%size)*info.width;
@@ -339,7 +340,7 @@ export class Program<T extends Drawable<T>> {
     protected scene: Scene<T> = [];
     protected ready: Array<Promise<unknown>> = null!;
     // Event stuff
-    protected handlers: Map<string, PluginEventHandler<T, any>> = new Map(); // TODO: Type this
+    protected handlers: Map<string, Array<PluginEventHandler<T, any>>> = new Map(); // TODO: Type this
     protected events: Array<PluginEvent<T>> = [];
     // Public state
     readonly fbo: FrameBufferObject = null!;
@@ -442,8 +443,10 @@ export class Program<T extends Drawable<T>> {
         this.gl.useProgram(this.main);
         this.gl.enable(this.gl.CULL_FACE);
         this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.depthFunc(this.gl.LEQUAL);
         this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+        this.gl.depthMask(true);
     }
 
     protected static lastTime = 0;
@@ -513,10 +516,15 @@ export class Program<T extends Drawable<T>> {
             if (!this.handlers.has(e.type)) {
                 continue;
             }
-            this.handlers.get(e.type)!(e);
+
+            for (const handler of this.handlers.get(e.type)!) {
+                handler(e);
+            }
         }
         if (this.handlers.has("done")) {
-            this.handlers.get("done")!(new PluginEvent("done", {shape: null!}));
+            for (const handler of this.handlers.get("done")!) {
+                handler(new PluginEvent("done", {shape: null!}));
+            }
         }
         this.events = [];
 
@@ -542,6 +550,10 @@ export class Program<T extends Drawable<T>> {
     }
 
     on<E extends PluginEvent<T>> (type: keyof EventMap<T>, handler: PluginEventHandler<T, E>) {
-        this.handlers.set(type, handler);
+        if (this.handlers.has(type)) {
+            this.handlers.get(type)!.push(handler);
+        } else {
+            this.handlers.set(type, [handler]);
+        }
     }
 }

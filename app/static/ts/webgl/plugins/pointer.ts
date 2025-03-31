@@ -11,11 +11,15 @@ import {
 export class PointerPluginEvent extends PluginEvent<Shape> {
     id: number;
     composite: Shape;
+    clientX: number;
+    clientY: number;
 
-    constructor(type: string, {id, shape, composite}: {id: number, shape: Shape, composite: Shape}) {
+    constructor(type: string, {id, shape, composite, clientX, clientY}: {id: number, shape: Shape, composite: Shape, clientX: number, clientY: number}) {
         super(type, {shape});
         this.id = id;
         this.composite = composite;
+        this.clientX = clientX;
+        this.clientY = clientY;
     }
 }
 export type PointerPluginHandler = PluginEventHandler<Shape, PointerPluginEvent>;
@@ -50,13 +54,13 @@ function handler(gl: WebGL2RenderingContext, program: Program<Shape>, shapes: Ar
         // Find shape
         const id = data[0];
         if (id == 0) {
-            program.fire(new PointerPluginEvent(e.type, {id, shape: null!, composite: null!}));
+            program.fire(new PointerPluginEvent(e.type, {id, shape: null!, composite: null!, clientX: e.movementX, clientY: e.movementY}));
             return;
         }
     
         for (const shape of shapes) {
             if (shape.id == id) {
-                program.fire(new PointerPluginEvent(e.type, {id, shape, composite: shape}));
+                program.fire(new PointerPluginEvent(e.type, {id, shape, composite: shape, clientX: e.movementX, clientY: e.movementY}));
                 break;
             }
     
@@ -65,7 +69,7 @@ function handler(gl: WebGL2RenderingContext, program: Program<Shape>, shapes: Ar
                     continue;
                 }
 
-                program.fire(new PointerPluginEvent(e.type, {id, shape: child, composite: shape}));
+                program.fire(new PointerPluginEvent(e.type, {id, shape: child, composite: shape,  clientX: e.movementX, clientY: e.movementY}));
                 return;
             }
         }
@@ -87,6 +91,7 @@ export class PointerPlugin implements PluginLike {
         // Attach event listeners
         program.canvas.addEventListener("pointermove", handler(gl, program, shapes) as EventListener);
         program.canvas.addEventListener("pointerdown", handler(gl, program, shapes) as EventListener);
+        program.canvas.addEventListener("pointerup", handler(gl, program, shapes) as EventListener);
 
         this.gl = gl;
         this.n = n;

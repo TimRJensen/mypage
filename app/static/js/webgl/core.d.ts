@@ -83,7 +83,7 @@ export declare class Program<T extends Drawable<T>> {
     protected rendering: boolean;
     protected scene: Scene<T>;
     protected ready: Array<Promise<unknown>>;
-    protected handlers: Map<string, PluginEventHandler<T, any>>;
+    protected handlers: Map<string, Array<PluginEventHandler<T, any>>>;
     protected events: Array<PluginEvent<T>>;
     readonly fbo: FrameBufferObject;
     readonly plugins: Array<PluginLike>;
