@@ -52,6 +52,7 @@ body {
     display: flex;
     flex-flow: column nowrap;
     align-items: center;
+    overflow: hidden;
 }
 
 /* Landing */
@@ -169,8 +170,8 @@ body {
 /* Canvas */
 #canvas-box {
     position: relative;
-    width: 100vmax;
-    height: 100vmin;
+    width: 100vw;
+    height: 100vh;
     perspective-origin: -150%;
 }
 
@@ -181,22 +182,7 @@ body {
     touch-action: none;
 }
 
-#canvas-box::before {
-    display: none;
-    position: absolute;
-    content: "";
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-#canvas-box .msg {
-    display: none;
-    left: 50%;
-    top: 7.5%;
-    color: #FFF;
-    animation: msg-in-out 3s forwards;
-}
-
-.button-box {
+#canvas-box  .control-box {
     position: absolute;
     display: flex;
     flex-flow: row nowrap;
@@ -208,12 +194,7 @@ body {
     bottom: calc(100% - 3rem - 20px);
 }
 
-#canvas-box:has(.button-box>#help[data-help="1"]) .msg,
-#canvas-box:has(.button-box>#help[data-help="1"])::before {
-    display: block;
-}
-
-#canvas-box .button-box .breadcrumbs {
+#canvas-box .control-box .breadcrumbs {
     margin-right: auto;
     font-size: 1.5rem;
     line-height: 1.5rem;
@@ -221,20 +202,20 @@ body {
     cursor: pointer;
 }
 
-#canvas-box .button-box .button {
+#canvas-box .control-box .button {
     width: 2.5rem;
     height: 2.5rem;
 }
 
-#canvas-box .button-box svg {
+#canvas-box .control-box svg {
     width: 100%;
     height: 100%;
 }
 
-#canvas-box .info-box {
+#canvas-box .hint-box {
     position: absolute;
     display: none;
-    flex-flow: row wrap;
+    flex-flow: column nowrap;
     justify-content: center;
     align-content: center;
     gap: 15px;
@@ -254,51 +235,36 @@ body {
     transform: translate(-50%, -100%) perspective(500px) rotateX(-5deg);
 }
 
-#canvas-box .info-box[data-id="528"] {
+#canvas-box .hint-box[data-id="528"] {
     transform: translate(-50%, -127.5%) perspective(500px) rotateX(-5deg);
 }
 
-#canvas-box .info-box .rating {
+#canvas-box .hint-box .rating {
     display: flex;
     flex-flow: row nowrap;
     justify-content: center;
     gap: 0.5rem;
 }
 
-#canvas-box .info-box[data-id="528"] > .rating,
-#canvas-box .info-box[data-id="768"] > .rating,
-#canvas-box .info-box[data-id="769"] > .rating {
+#canvas-box .hint-box[data-id="528"] > .rating,
+#canvas-box .hint-box[data-id="768"] > .rating,
+#canvas-box .hint-box[data-id="769"] > .rating {
     display: none;
 }
 
-#canvas-box .info-box .rating > * {
+#canvas-box .hint-box .rating > * {
     width: 1.5rem;
     height: 1.5rem;
     border: solid 2.5px #FFF;
     border-radius: 50%;
 }
 
-#canvas-box .info-box .rating > *[data-toggled="1"] {
+#canvas-box .hint-box .rating > *[data-toggled="1"] {
     background-color: #FFF;
-}
-
-.grid-text-box {
-    position: relative;
 }
 
 #canvas-box .grid-text {
     display: none;
-}
-
-#canvas-box .grid-text:nth-of-type(1) {
-    display: block;
-    position: absolute;
-    top: 55%;
-    left: 17.5%;
-    color:#FFF;
-    text-align: center;
-    font-size: 3rem;
-    transform: perspective(500px) rotateX(75deg) rotateZ(-45deg);
 }
 
 /* Footer */
@@ -306,8 +272,8 @@ body {
     display: flex;
     flex-flow: column wrap;
     gap: 2rem;
-    min-width: 100vw;
-    min-height: 100vh;
+    width: 100vw;
+    height: 100vh;
     justify-content: center;
     align-items: center;
 }
@@ -317,6 +283,7 @@ body {
     height: 3rem;
     border-radius: 50%;
     background-color: rgb(102, 51, 153);
+    z-index: 100;
 }
 
 #footer #contact-box {
@@ -326,29 +293,60 @@ body {
 }
 
 #footer #contact-box > *:first-child {
+    position: relative;
     grid-row: 1 / span 2;
     place-self: end;
-    width: 200px;
-    height: 200px;
-    border: solid 4px rebeccapurple;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
     border-radius: 50%;
+    width: 256px;
+    height: 256px;
+    background-color: rebeccapurple;
+}
+
+#footer #contact-box > *:first-child::after {
+    position: absolute;
+    content: "";
+    width: 100%;
+    height: 100%;
+    background-color: #FFF;
+    /* Dunno where that extra pixel below is comming from ¯\_(ツ)_/¯ */
+    clip-path: path("M 0,128 L 0,257 L 257,257 L 257,128 A 128 128 0 0 1 0 128");
+    clip-rule: evenodd;
+}
+
+#footer #contact-box > *:first-child :not(:first-child) {
+    display: none;
 }
 
 #footer #contact-box > *:nth-child(2) {
+    width: 100%;
     place-self: end;
     padding-left: 2rem;
     padding-bottom: 0.5rem;
     border-bottom: solid 2px rebeccapurple;
+    text-align: right;
 }
 
 #footer #contact-box > *:nth-child(3) {
+    width: 100%;
     padding-left: 2rem;
     padding-top: 0.5rem;
     border-top: solid 2px rebeccapurple;
     text-align: right;
 }
 
-#footer #contact-box > *:nth-child(3) > svg {
+#footer #contact-box > *:nth-child(3) a:first-of-type {
+    margin-right: 0.5rem;
+}
+
+#footer #contact-box > *:nth-child(3) svg {
     margin-top: 0.5rem;
     fill: rebeccapurple;
+}
+
+#footer #contact-box .img {
+    width: 100%;
+    object-fit: cover;
 }

@@ -4,23 +4,23 @@ interface InfoPanelData {
 
 export default {
     0x200: {
-        txt: "<b>Critical thinking</b><br/>",
+        txt: "<b>Critical thinking</b>",
         rating: 5,
     },
     0x201: {
-        txt: "<b>Communication</b><br/>",
+        txt: "<b>Communication</b>",
         rating: 3,
     },
     0x202: {
-        txt: "<b>Problem solving</b><br/>",
+        txt: "<b>Problem solving</b>",
         rating: 4,
     },
     0x203: {
-        txt: "<b>Planning</b><br/>",
+        txt: "<b>Planning</b>",
         rating: 4,
     },
     0x204: {
-        txt: "<b>Creativity</b><br/>",
+        txt: "<b>Creativity</b>",
         rating: 3,
     },
     0x210: {

@@ -27,6 +27,10 @@ import hints from "./hints.js";
     if (!gl) {
         throw new Error("WebGL2 is not supported");
     }
+
+    canvas.width = window.innerWidth;
+    canvas.height = (window.innerWidth*9)/16;
+
     // Shapes
     const shapes = [//col == row == 0.1238
         // Grid
@@ -37,6 +41,7 @@ import hints from "./hints.js";
         ]}),
         // Backend
         new Composite(gl, {id: 0x41, display: "fixed", pos: [-0.6065, 0.0, 0.2601], shapes: [
+            new Text(gl, 2, {pos: [0.0619, 0.001,  -0.0619], rotation: [Math.PI, -Math.PI/4, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [-0.6065, 0.06, 0.2601], [0.0, 0.06, -0.1113]),
             new Logo(gl, 11, {id: 0x410, pos: [0.2331, 0.1, 0.4038]}),
@@ -48,6 +53,7 @@ import hints from "./hints.js";
         ]}),
         // Frontend
         new Composite(gl, {id: 0x42, display: "fixed", pos: [0.0, 0.0, 0.5077], shapes: [
+            new Text(gl, 8, {pos: [0.0, 0.001, -0.0619], rotation: [Math.PI, 0.0, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [0.0, 0.06, 0.5589], [0.0, 0.06, -0.0863]),
             new Logo(gl, 22, {id: 0x420, pos: [0.4381, 0.1, 0.1595]}),
@@ -60,6 +66,7 @@ import hints from "./hints.js";
         ]}),
         // All purpose
         new Composite(gl, {id: 0x43, display: "fixed", pos: [0.6065, 0.00, 0.2601], shapes: [
+            new Text(gl, 1, {pos: [-0.0850, 0.001,  -0.0619], rotation: [Math.PI, Math.PI/4, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [0.6065, 0.06, 0.2601], [0.0, 0.06, -0.1113]),
             new Logo(gl, 12, {id: 0x430, pos: [-0.2331, 0.1, 0.4038]}),
@@ -71,9 +78,6 @@ import hints from "./hints.js";
         // Technical skills
         new Composite(gl, {id: 0x4, display: "fixed", pos: [0.0, 0.0, -0.1113], shapes: [
             new Text(gl, 11, {pos: [0.0, 0.001, -0.1113], rotation: [Math.PI, 0.0, 0.0]}),
-            new Text(gl, 2, {display: "hidden", pos: [-0.53, 0.001,  0.33], rotation: [Math.PI, -Math.PI/4, 0.0]}),
-            new Text(gl, 8, {display: "hidden", pos: [0.0, 0.001, 0.55], rotation: [Math.PI, 0.0, 0.0]}),
-            new Text(gl, 1, {display: "hidden", pos: [0.51, 0.001,  0.31], rotation: [Math.PI, Math.PI/4, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [0.0, 0.06, -0.1113], [0.0, 0.06, -0.728]),
         ]}),
@@ -87,13 +91,13 @@ import hints from "./hints.js";
         ]}),
         // About me
         new Composite(gl, {id: 0x21, display: "fixed", pos: [-1.1018, 0.0, 0.0125], shapes: [
+            new Text(gl, 0, {pos: [0.0619, 0.0, -0.0619], rotation: [Math.PI, -Math.PI/4, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [-1.1018, 0.06, 0.0125], [-0.5020, 0.06, -0.4620]),
         ]}),
         // Personal skills
         new Composite(gl, {id: 0x2, display: "fixed", pos: [-0.4820, 0.001, -0.4820], shapes: [
             new Text(gl, 9, {pos: [0.077, 0.0, -0.07], rotation: [Math.PI, -Math.PI/4, 0.0]}),
-            new Text(gl, 0, {display: "hidden", pos: [-0.5500, 0.0, 0.4195], rotation: [Math.PI, -Math.PI/4, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [-0.4820, 0.06, -0.4819], [0.0, 0.06, -0.728]),
             new Logo(gl, 3, {id: 0x204, pos: [0.0619, 0.1, 0.3885], scale: [1.1, 1.0, 1.1]}),
@@ -272,7 +276,7 @@ import hints from "./hints.js";
         requestAnimationFrame(animateCamera);
     }
 
-    const panel = document.querySelector<HTMLDivElement>("#canvas-box .info-box")!;
+    const panel = document.querySelector<HTMLDivElement>("#canvas-box .hint-box")!;
     function setInfoPanel(cx: number, cy: number, id: number) {
         if (id < 0) {
             panel.style.display = "none";
@@ -428,19 +432,19 @@ import hints from "./hints.js";
 
         const rnd = Math.random();
         switch (true) {
-            case rnd < 0.25:
-                cloudState = 4;
-                break;
-            case rnd < 0.5:
-                cloudState = 5;
-                break;
-            case rnd < 0.75:
-                cloudState = 6;
-                break;
-            case rnd < 1:
-            case cloudTrigger == 10:
+            case rnd < 0.1:
+            case cloudTrigger == 9:
                 cloudState = 7;
                 cloudTrigger = 0;
+                break;
+            case rnd < 0.4:
+                cloudState = 4;
+                break;
+            case rnd < 0.7:
+                cloudState = 5;
+                break;
+            case rnd < 1.0:
+                cloudState = 6;
                 break;
         }
 
@@ -455,14 +459,14 @@ import hints from "./hints.js";
     });
 
     main.on("pointermove", (e: PointerPluginEvent) => {
-        return;
+        //return;
 
         if (!cloudDrag) {
             return;
         }
 
         const dx = (e.clientX/canvas.width);
-        const dz = (e.clientY/canvas.height)*2.5;
+        const dz = (e.clientY/canvas.height)*1.5;
         shapes[9].world[12] += dx;
         shapes[9].world[14] -= dz;
         for (const child of shapes[9]) {
@@ -471,6 +475,8 @@ import hints from "./hints.js";
         }
     });
 
+    const amplitude = 0.0005;
+    const frequency = 1;
     let cloudDelta = 0.0005;
     let turn = Math.random();
     main.on("done", () => {
@@ -478,14 +484,13 @@ import hints from "./hints.js";
             cloudDelta = -cloudDelta;
             turn = Math.random();
         }
-        const amplitude = 0.0005;  // Max vertical displacement
-        const frequency = 1;  // Adjust speed of up/down motion
+
         const time = performance.now() / 1000;  // Time in seconds
         shapes[9].world[12] += cloudDelta;
-        shapes[9].world[13] += Math.sin(time * frequency) * amplitude;
+        shapes[9].world[13] += Math.sin(time*frequency)*amplitude;
         for (const child of shapes[9]) {
-            child.world[12] += cloudDelta;
-            child.world[13] += child instanceof Plane ? Math.sin(time * frequency) * amplitude : 0.0;
+            child.world[12] = shapes[9].world[12];
+            child.world[13] += child instanceof Plane ? Math.sin(time*frequency)*amplitude : 0.0;
         }
     });
 
@@ -566,4 +571,15 @@ import hints from "./hints.js";
     });
 
     (breadcrumbs.firstChild as HTMLElement)!.dataset.id = ROOT.toString();
-}())
+}());
+
+// Handle portraits
+(function (){
+    const portraitBox = document.querySelector<HTMLDivElement>("#footer #contact-box > *:first-child")!;
+    portraitBox.addEventListener("pointerdown", (e: PointerEvent) => {
+        const element = e.target as HTMLElement;
+        const next = (element.nextElementSibling ?? portraitBox.firstElementChild) as HTMLElement;
+        element.style.setProperty("display", "none");
+        next.style.setProperty("display", "block");
+    });
+}());
