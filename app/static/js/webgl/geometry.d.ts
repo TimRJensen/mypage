@@ -41,8 +41,6 @@ export declare class Shape {
     [Symbol.iterator](): Generator<this, void, unknown>;
     show(): void;
     hide(): void;
-    hoverIn(): void;
-    hoverOut(): void;
     focus(): void;
     blur(): void;
     draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawObject: DrawInfo<Shape>, offset?: number): void;
@@ -101,21 +99,19 @@ export declare class Composite implements Drawable<Shape> {
     visible: number;
     hovered: number;
     focused: number;
-    constructor(gl: WebGL2RenderingContext, { id, pos, display, visible, shapes }: CompositeProps);
+    constructor(gl: WebGL2RenderingContext, { id, pos, display, shapes }: CompositeProps);
     [Symbol.iterator](this: Composite): Generator<Shape, void, unknown>;
     show(): void;
     hide(): void;
-    hoverIn(): void;
-    hoverOut(): void;
     focus(): void;
     blur(): void;
     draw(gl: WebGL2RenderingContext, map: Map<string, UniformObject>, drawInfo: DrawInfo<Shape>, offset?: number): void;
 }
 export declare class RootNode extends Composite {
-    constructor(gl: WebGL2RenderingContext, { id, pos }: CompositeProps);
+    constructor(gl: WebGL2RenderingContext, { id, display, pos }: CompositeProps);
 }
 export declare class Node extends Composite {
-    constructor(gl: WebGL2RenderingContext, { id, pos }: CompositeProps);
+    constructor(gl: WebGL2RenderingContext, { id, display, pos }: CompositeProps);
 }
 export declare class Edge extends Composite {
     constructor(gl: WebGL2RenderingContext, start: Array<number>, end: Array<number>);

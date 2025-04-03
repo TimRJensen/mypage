@@ -1,6 +1,6 @@
 import {mat4, vec3} from "../linalg.js";
 import {Drawable, DrawInfo, setUniform, UniformObject} from "./common.js";
-import {createStaticBuffer, createStaticBufferN} from "./core.js";
+import {createStaticBuffer} from "./core.js";
 
 // Default color (white).
 const WHITE: [number, number, number] = [255, 255, 255]
@@ -112,10 +112,8 @@ export class Shape  {
         this.buffer = data.then<[WebGLBuffer, WebGLBuffer]>(async res => {
             const view = new DataView(res);
             const n = view.getInt32(0, true);
-            // @ts-ignore
-            this.vertices = n/Float32Array.BYTES_PER_ELEMENT;
-            // @ts-ignore
-            this.indices = (view.byteLength - (n + 4))/Uint16Array.BYTES_PER_ELEMENT;
+            Reflect.set(this, "vertices", n/Float32Array.BYTES_PER_ELEMENT);
+            Reflect.set(this, "indices", (view.byteLength - (n + 4))/Uint16Array.BYTES_PER_ELEMENT)
 
             return cache.get(this.constructor.name)!;
         });
@@ -131,6 +129,7 @@ export class Shape  {
         this.pick_color = new Float32Array(pick_color);
         this.depth = 0;
         this.display = display;
+        this.visible = display == "hidden" ? 0 : 1;
     }
 
     *[Symbol.iterator]() {
@@ -142,26 +141,19 @@ export class Shape  {
     }
 
     hide() {
-        if (this.display == "fixed" || this.focused) { 
-            return;
+        switch (true) {
+            case this.focused == 1:
+            case this.hovered == 1:
+            case this.display == "fixed":
+            case this.display == "inherit":
+                return;
         }
-        this.visible = 0;
-    }
-
-    hoverIn() {
-        this.hovered = 1;
-    }
-
-    hoverOut() {
-        if (this.focused) {
-            return;
-        }
-        this.hovered = 0;
+        this.visible =  0;
     }
 
     focus() {
-        this.hovered = 1;
         this.focused = 1;
+        this.visible = 1;
     }
 
     blur() {
@@ -182,7 +174,7 @@ export class Shape  {
         }
 
         if (this.indices > 0) {
-            gl.drawElements(this.method, this.indices, gl.UNSIGNED_SHORT, offset*Uint16Array.BYTES_PER_ELEMENT*2);
+            gl.drawElements(this.method, this.indices, gl.UNSIGNED_SHORT, offset*Uint16Array.BYTES_PER_ELEMENT);
         }
     }
 }
@@ -257,7 +249,7 @@ export class Root extends Shape {
         {
             id = -1, type = ShapeType.COLORED,
             pos = [0, 0, 0],
-            scale = [0.075, 0.125, 0.075],
+            scale = [0.075, 0.075, 0.075],
             color = WHITE, pick_color = WHITE,
             display = "inherit",
         }: ShapeProps
@@ -270,7 +262,7 @@ export class Root extends Shape {
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
         ])
-        .rotateX(-Math.PI/2)
+        .rotateX(-0.25)
         .scale(scale[0], scale[1], scale[2]);
     }
 }
@@ -282,7 +274,7 @@ export class Circle extends Shape {
     constructor(
         gl: WebGL2RenderingContext,
         {
-            id = -1, type = ShapeType.COLORED,
+            id = 0, type = ShapeType.COLORED,
             pos = [0, 0, 0],
             scale = [1, 1, 1],
             color = WHITE, pick_color = WHITE,
@@ -325,7 +317,7 @@ export class Background extends Circle {
             pos[0], pos[1], pos[2], 1,
         ])
         .rotateX(-Math.PI/2)
-        .scale(scale[0]+0.175, scale[1], scale[2]+0.175);
+        .scale(scale[0]+0.15, scale[1], scale[2]+0.15);
     }
 }
 
@@ -431,45 +423,53 @@ export class Composite implements Drawable<Shape> {
     {
         id = -1,
         pos = [0, 0, 0],
-        display = "inherit", visible = 1,
+        display = "inherit",
         shapes = []
     }: CompositeProps
     ) {
         const key = shapes.map(shape => shape.constructor.name).join();
         if (!cache.has(key)) {
             cache.set(key, Promise.all(shapes.map(shape => shape.buffer)).then(buffers => {
-                const [cvOk, cvBuff] = createStaticBufferN(gl, shapes.reduce((acc, shape) => acc + shape.vertices*4, 0));
-                if (!cvOk) {
-                    throw new Error("Failed to create vertex buffer.");
-                }
-                const [ciOk, ciBuff] = createStaticBufferN(gl, shapes.reduce((acc, shape) => acc + shape.indices*4, 0), gl.ELEMENT_ARRAY_BUFFER);
-                if (!ciOk) {
-                    throw new Error("Failed to create index buffer.");
-                }
+                const vBytes = shapes.reduce((acc, shape) => acc + shape.vertices, 0);
+                const iBytes = shapes.reduce((acc, shape) => acc + shape.indices, 0);
+                const vAll = new Float32Array(vBytes*4);
+                const iAll = new Uint16Array(iBytes*2); 
 
                 let offset = [0, 0];
                 for (const [vBuff, iBuff] of buffers) {
                     gl.bindBuffer(gl.ARRAY_BUFFER, vBuff);
                     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBuff);
 
-                    const vView = new Float32Array(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/4);
+                    const vSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/Float32Array.BYTES_PER_ELEMENT;
+                    const vView = new Float32Array(vSize);
                     gl.getBufferSubData(gl.ARRAY_BUFFER, 0, vView, 0);
-                    const iView = new Uint16Array(gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/2);
+                    vAll.set(vView, offset[0]);
+
+                    const iSize = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/Uint16Array.BYTES_PER_ELEMENT;
+                    const iView = new Uint16Array(iSize);
                     gl.getBufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, iView, 0);
-                    for (let i = 0; i < iView.length; i++) {
-                        iView[i] += offset[0]/(8*4);
+                    iAll.set(iView, offset[1]);
+
+                    const n = offset[0]/8;
+                    for (let i = offset[1]; i < offset[1] + iSize; i++) {
+                        iAll[i] += n;
                     }
-
-                    gl.bindBuffer(gl.ARRAY_BUFFER, cvBuff);
-                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ciBuff);
-                    gl.bufferSubData(gl.ARRAY_BUFFER, offset[0], vView);
-                    gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, offset[1], iView);
-
-                    offset[0] += vView.byteLength;
-                    offset[1] += iView.length*4;
+                 
+                    offset[0] += vSize;
+                    offset[1] += iSize;
                     gl.bindBuffer(gl.ARRAY_BUFFER, null);
                     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
                 }
+
+                const [cvOk, cvBuff] = createStaticBuffer(gl, vAll);
+                if (!cvOk) {
+                    throw new Error("Failed to create vertex buffer.");
+                }
+                const [ciOk, ciBuff] = createStaticBuffer(gl, iAll, gl.ELEMENT_ARRAY_BUFFER);
+                if (!ciOk) {
+                    throw new Error("Failed to create index buffer.");
+                }
+
 
                 return Promise.resolve([cvBuff!, ciBuff!]);
             }));
@@ -477,10 +477,8 @@ export class Composite implements Drawable<Shape> {
         this.buffer = cache.get(key)!.then<[WebGLBuffer, WebGLBuffer]>(([vBuff, iBuff]) => {
             gl.bindBuffer(gl.ARRAY_BUFFER, vBuff);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBuff);
-            // @ts-ignore
-            this.vertices = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/Float32Array.BYTES_PER_ELEMENT;
-            // @ts-ignore
-            this.indices = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/Uint16Array.BYTES_PER_ELEMENT;
+            Reflect.set(this, "vertices", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)/Float32Array.BYTES_PER_ELEMENT);
+            Reflect.set(this, "indices", gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE)/Uint16Array.BYTES_PER_ELEMENT);
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
@@ -507,9 +505,7 @@ export class Composite implements Drawable<Shape> {
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
         ]);
-
         this.display = display;
-        this.visible = visible;
     }
 
     *[Symbol.iterator](this: Composite) {
@@ -520,50 +516,42 @@ export class Composite implements Drawable<Shape> {
 
     show() {
         for (const shape of this.shapes) {
-            if (shape.display == "hidden" && !shape.focused) {
-                continue;
-            }
-            shape.visible = 1;
+            shape.show();
         }
+
         this.visible = 1;
     }
 
     hide() {
         for (const shape of this.shapes) {
-            if (shape.display == "fixed" || shape.focused) {
-                continue;
-            }
-            shape.visible = 0;
+            shape.hide();
         }
 
-        if (this.display != "fixed") {
-            this.visible = 0;
+        switch (true) {
+            case this.focused == 1:
+            case this.hovered == 1:
+            case this.display == "fixed":
+            case this.display == "inherit":
+                return;
         }
+        this.visible = 0;
     }
 
-    hoverIn(): void {
+    focus() {
         for (const shape of this.shapes) {
-            shape.hovered = 1;
+            shape.focus();
         }
-    }
 
-    hoverOut(): void {
-        for (const shape of this.shapes) {
-            shape.hovered = 0;
-        }
-    }
-
-    focus(): void {
-        for (const shape of this.shapes) {
-            shape.focused = 1;
-        }
         this.focused = 1;
+        this.visible = 1;
     }
 
-    blur(): void {
+    blur() {
         for (const shape of this.shapes) {
-            shape.focused = 0;
+            shape.blur();
         }
+
+        this.hovered = 0;
         this.focused = 0;
     }
 
@@ -571,7 +559,6 @@ export class Composite implements Drawable<Shape> {
         if (!this.visible) {
             return;
         }
-
         for (const shape of this.shapes) {
             shape.draw(gl, map, drawInfo, offset);
             offset += shape.indices > 0 ? shape.indices : shape.vertices;
@@ -580,34 +567,34 @@ export class Composite implements Drawable<Shape> {
 }
 
 export class RootNode extends Composite {
-    constructor(gl: WebGL2RenderingContext, {id = -1, pos = [0, 0, 0]}: CompositeProps) {
-        super(gl, {id, display: "fixed", pos, shapes: [
-            new Root(gl, {pos: [0.0, 0.05, 0.0], pick_color: [255, 141, 35]}),
-            new Background(gl, {type: ShapeType.SHADOW, pos: [0.0, 0.07, 0.0], color: [102, 51, 153]}),
-            new Circle(gl, {id: 0, type: ShapeType.SHADOW, pos: [0.0, 0.015, 0.0], color: [0, 0, 0]}),
+    constructor(gl: WebGL2RenderingContext, {id = -1, display = "fixed", pos = [0, 0, 0]}: CompositeProps) {
+        super(gl, {id, display, pos, shapes: [
+            new Root(gl, {display, pos: [0.0, 0.025, 0.0], pick_color: [255, 141, 35]}),
+            new Background(gl, {id: -1, type: ShapeType.BACKGROUND, pos: [0.0, 0.075, 0.0]}),
+            new Circle(gl, {display, type: ShapeType.SHADOW, pos: [0.0, 0.015, 0.0], color: [0, 0, 0]}),
         ]});
     }
 } 
 
 export class Node extends Composite {
-    constructor(gl: WebGL2RenderingContext, {id = -1, pos = [0, 0, 0]}: CompositeProps) {
-        super(gl, {id, display: "fixed", pos, shapes: [
-            new Sphere(gl, {pos: [0.0, 0.06, 0.0], pick_color: [255, 141, 35]}),
-            new Circle(gl, {id: 0, type: ShapeType.SHADOW, pos: [0.0, 0.015, 0.0], color: [0, 0, 0]}),
+    constructor(gl: WebGL2RenderingContext, {id = -1, display = "fixed", pos = [0, 0, 0]}: CompositeProps) {
+        super(gl, {id, pos, shapes: [
+            new Sphere(gl, {display, pos: [0.0, 0.06, 0.0], pick_color: [255, 141, 35]}),
+            new Circle(gl, {display, type: ShapeType.SHADOW, pos: [0.0, 0.015, 0.0], color: [0, 0, 0]}),
         ]});
     }
 }
 
 export class Edge extends Composite {
     constructor(gl: WebGL2RenderingContext, start: Array<number>, end: Array<number>) {
-        super(gl, {visible: 0, pos: [-start[0], 0.0, -start[2]], shapes: [
-            new Line(gl, start, end, 0.0015, {pick_color: [255, 141, 35]}),
+        super(gl, {pos: [-start[0], 0.0, -start[2]], shapes: [
+            new Line(gl, start, end, 0.0015, {display: "hidden", pick_color: [255, 141, 35]}),
             new Line(
                 gl,
                 [start[0], 0.0125, start[2]],
-                [end[0], 0.01, end[2]],
+                [end[0], 0.0125, end[2]],
                 0.00125,
-                {id: 0, type: ShapeType.SHADOW,  color: [0, 0, 0]}
+                {display: "hidden", type: ShapeType.SHADOW, color: [0, 0, 0]}
             ),
         ]});
     }
@@ -616,8 +603,8 @@ export class Edge extends Composite {
 export class Logo extends Composite {
     constructor(gl: WebGL2RenderingContext, depth: number, {id = 0, display = "hidden", pos = [0, 0, 0], scale = [1.2, 1.0, 1.0]}: CompositeProps) {
         super(gl, {id, display, visible: 0, pos: [pos[0], 0.0, pos[2]], shapes: [
-            new Plane(gl, depth, {pos: [0.0, pos[1], 0.0], rotation: [-Math.PI/2, 0.0, 0.0], scale}),
-            new Circle(gl, {id: 0, type: ShapeType.SHADOW, pos: [0.0, 0.015, 0.0], color: [0, 0, 0]}),
+            new Plane(gl, depth, {display, pos: [0.0, pos[1], 0.0], rotation: [-Math.PI/2, 0.0, 0.0], scale}),
+            new Circle(gl, {display, type: ShapeType.SHADOW, pos: [0.0, 0.015, 0.0], color: [0, 0, 0]}),
         ]});
     }
 
@@ -631,7 +618,7 @@ export class Logo extends Composite {
 
 export class Text extends Composite {
     constructor(gl: WebGL2RenderingContext, depth: number, {id = 0, display = "fixed", pos = [0, 0, 0], scale = [2.5, 1.0, 1.5], rotation = [-Math.PI/2, 0.0, 0.0]}: CompositeProps) {
-        super(gl, {id, display, visible: display == "fixed" ? 1 : 0,  pos: [pos[0], pos[1], pos[2]], shapes: [
+        super(gl, {id, pos: [pos[0], pos[1], pos[2]], shapes: [
             new Plane(gl, depth, {display, type: ShapeType.TEXT, rotation, scale}),
         ]});
     }
@@ -646,9 +633,9 @@ export class Text extends Composite {
 
 export class Project extends Composite {
     constructor(gl: WebGL2RenderingContext, depth: number, {id = 0, pos = [0, 0, 0], rotation = [-Math.PI/2, 0.0, 0.0]}: CompositeProps) {
-        super(gl, {id, display: "hidden", visible: 0, pos, shapes: [
-            new Plane(gl, depth, {pos: [0.0, 0.1, 0.0], rotation, scale: [1.2, 1.0, 1.0]}),
-            new Circle(gl, {id: 0, type: ShapeType.SHADOW, pos: [0.0, 0.005, 0.0], color: [0, 0, 0]}),
+        super(gl, {id, visible: 0, pos, shapes: [
+            new Plane(gl, depth, {display: "hidden", pos: [0.0, 0.1, 0.0], rotation, scale: [1.2, 1.0, 1.0]}),
+            new Circle(gl, {display: "hidden", type: ShapeType.SHADOW, pos: [0.0, 0.005, 0.0], color: [0, 0, 0]}),
         ]});
     }
 
