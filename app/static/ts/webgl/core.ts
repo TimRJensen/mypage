@@ -416,13 +416,13 @@ export class Program<T extends Drawable<T>> {
         }
 
         // Initialize frambuffer
-        const [ok, main_fbo] = createFrameBufferObject(gl, canvas.width, canvas.height);
+        const [ok, main_fbo] = createFrameBufferObject(gl, canvas.width*devicePixelRatio, canvas.height*devicePixelRatio);
         if (!ok) {
             return;
         }
         // Resize canvas
-        gl.canvas.width = canvas.width;
-        gl.canvas.height = canvas.height;
+        gl.canvas.width = canvas.width*devicePixelRatio;
+        gl.canvas.height = canvas.height*devicePixelRatio;
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         
         this.gl = gl;

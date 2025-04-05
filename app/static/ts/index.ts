@@ -44,13 +44,13 @@ import infos from "./hints.js";
             new Text(gl, 7, {pos: [0.0, 0.001, -0.0619], rotation: [Math.PI, 0.0, 0.0]}),
             new Node(gl, {}),
             new Edge(gl, [0.0, 0.06, 0.5589], [0.0, 0.06, -0.0863]),
-            new Logo(gl, 0, {id: 0x200, pos: [0.0000, 0.1, 0.4043]}),
-            new Logo(gl, 1, {id: 0x201, pos: [-0.1846, 0.1, 0.3662]}),
-            new Logo(gl, 2, {id: 0x202, pos: [0.1846, 0.1, 0.3662]}),
-            new Logo(gl, 3, {id: 0x203, pos: [-0.3391, 0.1, 0.2580]}),
-            new Logo(gl, 4, {id: 0x204, pos: [0.3391, 0.1, 0.2580]}),
-            new Logo(gl, 5, {id: 0x205, pos: [-0.4381, 0.1, 0.0976]}),
-            new Logo(gl, 6, {id: 0x206, pos: [0.4381, 0.1, 0.0976]}),
+            new Logo(gl, 0, {id: 0x200, pos: [0.0000, 0.1, 0.5900]}),
+            new Logo(gl, 1, {id: 0x201, pos: [-0.1846, 0.1, 0.5519]}),
+            new Logo(gl, 2, {id: 0x202, pos: [0.1846, 0.1, 0.5519]}),
+            new Logo(gl, 3, {id: 0x203, pos: [-0.3391, 0.1, 0.4437]}),
+            new Logo(gl, 4, {id: 0x204, pos: [0.3391, 0.1, 0.4437]}),
+            new Logo(gl, 5, {id: 0x205, pos: [-0.4381, 0.1, 0.2833]}),
+            new Logo(gl, 6, {id: 0x206, pos: [0.4381, 0.1, 0.2833]}),
         ]}),
         // Backend
         new Composite(gl, {id: 0x21, display: "fixed", pos: [-0.6065, 0.0, 0.2601], shapes: [
@@ -451,9 +451,10 @@ import infos from "./hints.js";
     // Handle breadcrumbs
     const breadcrumbs = document.querySelector<HTMLDivElement>("#canvas-box .breadcrumbs")!;
     breadcrumbs.addEventListener("pointerdown", (e: PointerEvent) => {
+        e.preventDefault();
         moveInfoBox(null, 0, infoBox);
 
-        const id = Number.parseInt((<HTMLElement>e.target).dataset.id!);
+        const id = Number.parseInt((<HTMLElement>e.target).dataset.id ?? ROOT.toString());
         switch (id) {
             case ROOT:
             case HELP:
@@ -524,8 +525,6 @@ import infos from "./hints.js";
         breadcrumbs.replaceChildren(...(b.length > 1 ? b : a));
     });
 
-    (<HTMLElement>breadcrumbs.firstChild!).dataset.id = ROOT.toString();
-
     // Handle help
     let helpStarted = 0;
     const helpButton = document.querySelector<HTMLDivElement>("#canvas-box .control-box #help")!;
@@ -579,16 +578,9 @@ import infos from "./hints.js";
                 continue;
             }
 
-            if (helpStarted == 1) {
-                child.world[12] = hand.world[12];
-                child.world[14] = hand.world[14];
-            } else {
-                child.display = "hidden";
-                child.blur();
-                child.hide();
-            }
+            child.world[12] = hand.world[12];
+            child.world[14] = hand.world[14];
         }
-
     }
 
     const handAmplitude = 0.00025;
@@ -604,7 +596,7 @@ import infos from "./hints.js";
     const helpHints = [
         "Click and drag the map to move it around",
         "Click an object to move to it",
-        "Click an icon to view a infobox.\n\nClick anywhere to close it",
+        "Click an icon to view an infobox\n\nClick anywhere to close it",
         "Click the breadcrumbs to go back",
         "That's it!"
     ];
@@ -637,9 +629,11 @@ import infos from "./hints.js";
         }
         moveInfoBox(null, 0, infoBox);
 
+        const world = handWorlds[helpStarted - 1];
         switch (helpStarted) {
             case 1:
             case 2:
+                moveHand(world[12], world[13], world[14]);
                 setTimeout(() => {
                     canvasBox.removeAttribute("data-help");
                     helpStarted++;
@@ -658,6 +652,7 @@ import infos from "./hints.js";
                 trgXZ[0] = second.world[12] + offset[0];
                 trgXZ[1] = second.world[14] + offset[1];
                 panCamera();
+                moveHand(world[12], world[13], world[14]);
 
                 setTimeout(() => {
                     canvasBox.removeAttribute("data-help");
@@ -678,6 +673,9 @@ import infos from "./hints.js";
 
                 break;
             case 5:
+                map.set(0, {txt: ids[0][1], index: ids[0][0]});
+                breadcrumbs.firstElementChild!.textContent = rootTxt[0];
+
                 picked[0] = picked[1] = picked[2] = picked[3] = picked[4] = -1;
                 for (let i = 1; i < shapes.length - 1; i++) {
                     if (i < 9) {
@@ -690,8 +688,16 @@ import infos from "./hints.js";
                         shapes[i].hide();
                     }
                 }
-                map.set(0, {txt: ids[0][1], index: ids[0][0]});
-                breadcrumbs.firstElementChild!.textContent = rootTxt[0];
+                for (const child of shapes[map.get(HAND)!.index]) {
+                    child.display = "inherit";
+                }
+
+                const root = shapes[map.get(ROOT)!.index];
+                srcXZ[0] = cam[0];
+                srcXZ[1] = cam[2];
+                trgXZ[0] = root.world[12] + offset[0];
+                trgXZ[1] = root.world[14] + offset[1];
+                panCamera();
 
                 setTimeout(() => {
                     canvasBox.removeAttribute("data-help");
@@ -701,12 +707,20 @@ import infos from "./hints.js";
                 break;
         }
 
-        const world = handWorlds[helpStarted - 1];
+        if (helpStarted == 2) {
+            for (const child of shapes[map.get(HAND)!.index]) {
+                if (child.type == ShapeType.SHADOW) {
+                    child.display = "hidden";
+                    child.blur();
+                    child.hide();
+                }
+            }
+        }
+
         canvasBox.dataset.help = "1";
         helpBox.textContent = helpHints[helpStarted - 1];
         gridDrag = false;
         moveInfoBox(world, 0, helpBox);
-        moveHand(world[12], world[13], world[14]);
     });
 
     // Handle cloud
