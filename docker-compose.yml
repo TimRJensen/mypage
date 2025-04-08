@@ -1,0 +1,18 @@
+name: mypage
+
+services:
+  web:
+    container_name: web
+    build:
+      context: .
+      dockerfile: dockerfile
+    hostname: 0.0.0.0
+    ports:
+      - '4242:4242'
+    develop:
+      watch:
+        - action: sync
+          path: ./app/src
+          target: /app/src
+    command: deno run --allow-net --allow-read --allow-write=./src --allow-env --allow-run ./src/server.ts
+    restart: unless-stopped
