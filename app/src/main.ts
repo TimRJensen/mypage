@@ -28,9 +28,13 @@ import infos from "./hints.ts";
     if (!gl) {
         throw new Error("WebGL2 is not supported");
     }
-    canvas.width = 1920*devicePixelRatio;
+    canvas.width = 1600*Math.min(devicePixelRatio, 1.5);
     canvas.height = (canvas.width/16)*9;
-
+    const ext = gl.getExtension("WEBGL_debug_renderer_info")!;
+    console.log(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL));
+    console.log("Max texture size:", gl.getParameter(gl.MAX_TEXTURE_SIZE));
+console.log("Max texture array layers:", gl.getParameter(gl.MAX_ARRAY_TEXTURE_LAYERS));
+console.log("Max texture image units:", gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
     // Shapes
     const shapes = [ //col == row == 0.1238
         // Grid
@@ -91,10 +95,10 @@ import infos from "./hints.ts";
             new Project(gl, 0, {id: 0x300, pos: [0.3885, 0.0, 0.0], rotation: [-Math.PI/2, 0.0, 0.5]}),
         ],}),
         // About me
-        new Composite(gl, {id: 0x41, display: "fixed", pos: [-1.0399, 0.0, 0.1363], shapes: [
+        new Composite(gl, {id: 0x41, display: "fixed", pos: [-1.0399, 0.0, 0.0744], shapes: [
             new Text(gl, 11, {pos: [0.0619, 0.0, -0.0619], rotation: [Math.PI, -Math.PI/4, 0.0]}),
             new Node(gl),
-            new Edge(gl, [-1.0399, 0.06, 0.1363], [-0.5020, 0.06, -0.4620]),
+            new Edge(gl, [-1.0399, 0.06, 0.0744], [-0.5020, 0.06, -0.4620]),
         ],}),
         // Personal skills
         new Composite(gl, {id: 0x4, display: "fixed", pos: [-0.4820, 0.001, -0.4820], shapes: [
@@ -122,7 +126,7 @@ import infos from "./hints.ts";
         ],}),
         // Hand
         new Composite(gl, {id: 0x7, display: "hidden", pos: [0.3714, 0.0, -0.3714], shapes: [
-                new Logo(gl, 24, {display: "fixed", pos: [0.0, 0.0, 0.0], scale: [0.5, 1.0, 0.5]}),
+            new Logo(gl, 24, {display: "fixed", pos: [0.0, 0.0, 0.0], scale: [0.5, 1.0, 0.5]}),
         ],}),
         // Cloud
         new Composite(gl, {id: 0x8, display: "fixed", pos: [0.0, 0.0, 1.1142], shapes: [
@@ -232,36 +236,25 @@ import infos from "./hints.ts";
         }
 
         vpm = pm.mul(mat4.lookAt(cam, center, up));
-    }, { passive: false });
+    }, {passive: false});
     canvas.addEventListener("pointerup", (e) => {
         e.preventDefault();
 
-        if (!pointer) {
+        if (pointer == -1) {
             return;
         }
 
         canvas.releasePointerCapture(pointer);
         gridDrag = false;
-        pointer = 0;
-    }, { passive: false });
-    canvas.addEventListener("pointerleave", (e) => {
-        e.preventDefault();
-
-        if (!pointer) {
-            return;
-        }
-
-        canvas.releasePointerCapture(pointer);
-        gridDrag = false;
-        pointer = 0;
-    }, { passive: false });
+        pointer = -1;
+    }, {passive: false});
     canvas.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         canvas.setPointerCapture(e.pointerId);
 
         gridDrag = true;
         pointer = e.pointerId;
-    }, { passive: false });
+    }, {passive: false});
 
     // Handle pick (click)
     // picked[0] == root, picked[1 && 2] == hovered, picked[3 && 4] == focused
