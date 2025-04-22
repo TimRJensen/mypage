@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "build": "deno run -A https://deno.land/x/esbuild@v0.19.5/mod.js && ./src/main.ts --bundle --outfile=./main.js --format=esm",
+    "dev": "build && deno run --allow-net --allow-read --watch=src/"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "dom.asynciterable", "deno.ns"]
+  }
+}
