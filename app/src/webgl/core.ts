@@ -144,14 +144,14 @@ export function initializeUniforms(gl: WebGL2RenderingContext, program: WebGLPro
 /**
  * Utility function to create a static buffer from an ArrayBuffer.
  */
-export function createStaticBuffer(gl: WebGL2RenderingContext, data: ArrayBufferLike, target?: GLenum, method?: number,): [boolean, WebGLBuffer | null] {
+export function createStaticBuffer(gl: WebGL2RenderingContext, data: Float32Array|Uint16Array, target?: GLenum, method?: number,): [boolean, WebGLBuffer | null] {
     const buffer = gl.createBuffer();
     if (!buffer) {
         return [false, null];
     }
 
     gl.bindBuffer(target ?? gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(target ?? gl.ARRAY_BUFFER, <ArrayBuffer> data, method ?? gl.STREAM_READ);
+    gl.bufferData(target ?? gl.ARRAY_BUFFER, data, method ?? gl.STATIC_DRAW);
     return [true, buffer];
 }
 
@@ -159,7 +159,7 @@ export function createStaticBuffer(gl: WebGL2RenderingContext, data: ArrayBuffer
  * Utility function to create a Vertex Array Object.
  */
 export function createVAO(
-    gl: WebGL2RenderingContext, program: WebGLProgram, attrs: Map<string, AttributeObject>, vbuff: WebGLBuffer, ibuff: WebGLBuffer | null = null,
+    gl: WebGL2RenderingContext, attrs: Map<string, AttributeObject>, vbuff: WebGLBuffer, ibuff: WebGLBuffer | null = null,
 ): [boolean, WebGLVertexArrayObject | null] {
     const vao = gl.createVertexArray();
     if (!vao) {
@@ -171,7 +171,7 @@ export function createVAO(
 
     let offset = 0;
     for (const [name, { type, len, stride, size }] of attrs.entries()) {
-        const loc = gl.getAttribLocation(program, name);
+        const loc = attrs.get(name)?.loc!;
         gl.enableVertexAttribArray(loc);
 
         if (type === gl.FLOAT) {
@@ -329,9 +329,9 @@ export function attachMSAARenderBuffer(
         return null
     };
     const maxSamples = Math.max(samples, gl.getParameter(gl.MAX_SAMPLES));
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
     gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
     gl.renderbufferStorageMultisample(gl.RENDERBUFFER, maxSamples, type, fbo.width, fbo.height);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + n, gl.RENDERBUFFER, rb);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -463,13 +463,16 @@ export function resizeFrameBufferObject(
     fbo.height = Math.trunc(height);
 
     for (let i = 0; i < fbo.attachments.length; i++) {
-        const {tex: texture, type} = fbo.attachments[i];
+        const {tex, type} = fbo.attachments[i];
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
         if (fbo.samples > 0) {
-            gl.deleteRenderbuffer(texture);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, tex);
+            gl.deleteRenderbuffer(tex);
             attachMSAARenderBuffer(gl, fbo, type, i, fbo.samples);
         } else {
-            gl.deleteTexture(texture);
+            gl.activeTexture(gl.TEXTURE0 + i);
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.deleteTexture(tex);
             attachTextureBuffer(gl, fbo, type, i);
         }
     }
@@ -551,7 +554,7 @@ export class Program<T extends Drawable<T>> {
     protected eventQueue: EventQueue<T, Event<T>> = null!;
     protected plugins: Array<PluginLike<T>> = [];
     protected rendering: boolean = false;
-    protected _ready: Promise<unknown> = null!;
+    protected rdy: Promise<unknown> = null!;
     protected time = 0;
     protected fps = 60;
 
@@ -627,12 +630,12 @@ export class Program<T extends Drawable<T>> {
         });
 
         // Create quad VAO
-        const [ok_buff, buff] = createStaticBuffer(gl, VERTICES.buffer);
+        const [ok_buff, buff] = createStaticBuffer(gl, VERTICES);
         if (!ok_buff) {
             return;
         }
 
-        const [ok_vao, vao] = createVAO(gl, quad!, quad_attribs, buff!, null!);
+        const [ok_vao, vao] = createVAO(gl, quad_attribs, buff!, null!);
         if (!ok_vao) {
             return;
         }
@@ -673,47 +676,23 @@ export class Program<T extends Drawable<T>> {
 
             for (const drawable of scene.drawables) {
                 promises.push(drawable.buffer.then((res) => {
-                    const [vOK, vBuff] = createStaticBuffer(gl, res[0].buffer);
+                    const [vOK, vBuff] = createStaticBuffer(gl, res[0]);
                     if (!vOK) {
                         return;
                     }
         
-                    const [iOK, iBuff] = createStaticBuffer(gl, res[1].buffer, gl.ELEMENT_ARRAY_BUFFER);
+                    const [iOK, iBuff] = createStaticBuffer(gl, res[1], gl.ELEMENT_ARRAY_BUFFER);
                     if (!iOK) {
                         return;
                     }
         
-                    const [ok, vao] = createVAO(gl, main!, mainAttribs, vBuff!, iBuff);
+                    const [ok, vao] = createVAO(gl, mainAttribs, vBuff!, iBuff);
                     if (!ok) {
                         return;
                     }
 
                     map.set(drawable, vao!);
                 }));
-            }
-
-            if (globals.drawables) {
-                drawables.get(scene.name)!.push(...globals.drawables);
-                for (const drawable of globals.drawables!) {
-                    drawable.buffer.then((res) => {
-                        const [vOK, vBuff] = createStaticBuffer(gl, res[0].buffer);
-                        if (!vOK) {
-                            return;
-                        }
-            
-                        const [iOK, iBuff] = createStaticBuffer(gl, res[1].buffer, gl.ELEMENT_ARRAY_BUFFER);
-                        if (!iOK) {
-                            return;
-                        }
-            
-                        const [ok, vao] = createVAO(gl, main!, mainAttribs, vBuff!, iBuff);
-                        if (!ok) {
-                            return;
-                        }
-                        map.set(drawable, vao!);
-
-                    });
-                }
             }
             vaos.push(map);
         }
@@ -744,8 +723,8 @@ export class Program<T extends Drawable<T>> {
         this.fbos = [mainFBO!, msaaFBO!, outFBO!];
         this.vao = vao!;
         this.fps = globals.fps!;
-        this._ready = Promise.all(promises);
-        this._ready.then(() => {
+        this.rdy = Promise.all(promises);
+        this.rdy.then(() => {
             const dpi = Math.min(devicePixelRatio || 1, 2);
             const width = canvas.clientWidth*dpi;
             const height = canvas.clientHeight*dpi;
@@ -779,8 +758,6 @@ export class Program<T extends Drawable<T>> {
         });
     }
 
-    protected static lastTime = 0;
-
     protected draw(time: number) {
         if (time - this.time < 1000/this.fps) {
             requestAnimationFrame(this.draw.bind(this));
@@ -803,7 +780,7 @@ export class Program<T extends Drawable<T>> {
         gl.drawBuffers(msaaFBO.attachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
         for (let i = 0; i < msaaFBO.attachments.length; i++) {
             if (!i) {
-                gl.clearBufferfv(gl.COLOR, i, new Float32Array([...color, 0]));
+                gl.clearBufferfv(gl.COLOR, i, new Float32Array([...color, 1]));
             } else {
                 gl.clearBufferfv(gl.COLOR, i, new Float32Array([0, 0, 0, 0]));
             }
@@ -823,16 +800,16 @@ export class Program<T extends Drawable<T>> {
             if (!uniformInfo.has(key) || val instanceof Function) {
                 continue;
             }
-            switch (true) {
-                case val instanceof Function:
+            switch (typeof val) {
+                case "number":
+                case "object":
                     setUniform(gl, uniformInfo.get(key)!, val);
-                    break;
-                default:
-                    setUniform(gl, uniformInfo.get(key)!, val)
             }
         }
 
         // Draw to MSAA framebuffer
+        gl.clearColor(...color, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
         gl.bindFramebuffer(gl.FRAMEBUFFER, msaaFBO.buff);
         gl.drawBuffers(msaaFBO.attachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
         for (let i = 0; i < drawables.length; i++) {
@@ -869,8 +846,7 @@ export class Program<T extends Drawable<T>> {
         }
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, outFBO.buff);
-        gl.clearColor(0.0, 0.0, 0.0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
        
         // Blit to output framebuffer
@@ -896,7 +872,6 @@ export class Program<T extends Drawable<T>> {
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
         // Draw scene
-        gl.clearColor(0.0, 0.0, 0.0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, outFBO.attachments[0].tex);
@@ -927,7 +902,7 @@ export class Program<T extends Drawable<T>> {
     }
 
     ready(){
-        return this._ready;
+        return this.rdy;
     }
 
     render() {
@@ -935,7 +910,7 @@ export class Program<T extends Drawable<T>> {
             return;
         }
         this.rendering = true;
-        this._ready.then(() => {
+        this.rdy.then(() => {
             requestAnimationFrame(this.draw.bind(this));
         });
     }

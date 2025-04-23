@@ -2,7 +2,7 @@ import {mat4, vec3} from "./linalg.ts";
 import {Program} from "./webgl/core.ts";
 import {PickPlugin, PickPluginEvent} from "./webgl/plugins/pick.ts";
 import {BloomPlugin} from "./webgl/plugins/bloom.ts";
-import {Shape, Circle, Edge, Grid, Node, Plane, RootNode, ShapeType, Text, Texture} from "./webgl/geometry.ts";
+import {Shape, Circle, Edge, Grid, Node, Plane, RootNode, ShapeType, Text, Texture, Test} from "./webgl/geometry.ts";
 import vs from "./webgl/shaders/vertex-main.ts";
 import fs from "./webgl/shaders/fragment-main.ts";
 import hints from "./hints.ts";
@@ -16,7 +16,7 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
         return;
     }
 
-    const ws = new WebSocket("ws://localhost:4242");
+    const ws = new WebSocket("ws://192.168.0.107:4242");
     ws.onmessage = (msg) => {
         if (msg.data === "reload") {
             location.reload();
@@ -243,6 +243,22 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
             {
                 name: "guide",
                 drawables: [shapes[0], ...shapes.slice(9)],
+                setters: {
+                    u_world: (shape) => shape.world,
+                    u_type: (shape) => shape.type,
+                    u_picked: (shape) => picked.some((id) => id == shape.id) ? 1 : 0,
+                    u_color: (shape) => picked.some((id) => id == shape.id) ? shape.pickColor : shape.color,
+                    u_depth: (shape) => shape.id == CLOUD ? cloudState : shape.depth,
+                }
+            },
+            {
+                name: "test",
+                color: [102, 51, 153],
+                drawables: [
+                    shapes[0],
+                    new Node({id: 1, pos: [0.0, 0.0, -0.7059]}),
+                    new Test(), 
+                ],
                 setters: {
                     u_world: (shape) => shape.world,
                     u_type: (shape) => shape.type,

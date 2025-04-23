@@ -60,12 +60,12 @@ export class BloomPlugin implements PluginLike<Shape> {
             const attribs = initializeAtrtibutes(gl, quad!, ATTRIB_OBJECT);
             const uniforms = initializeUniforms(gl, quad!);
 
-            const [ok_buff, buff] = createStaticBuffer(gl, VERTICES.buffer);
+            const [ok_buff, buff] = createStaticBuffer(gl, VERTICES);
             if (!ok_buff) {
                 return;
             }
 
-            const [ok_vao, vao] = createVAO(gl, quad!, attribs, buff!);
+            const [ok_vao, vao] = createVAO(gl, attribs, buff!);
             if (!ok_vao) {
                 return;
             }

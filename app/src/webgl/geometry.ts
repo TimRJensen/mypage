@@ -52,7 +52,6 @@ function createGrid(xmax: number, ymax: number, step: number) {
         vertices.push(-xmax, 0.0, y, 0, 0, 0.2, 0.4, 1.45);
         vertices.push(xmax, 0.0, y, 0, 0, 0.2, 0.4, 1.45);
     }
-
     const vertexData = new Float32Array(vertices);
 
     // Generate indices
@@ -67,7 +66,7 @@ function createGrid(xmax: number, ymax: number, step: number) {
     view.setInt32(0, vertexData.byteLength, true);
 
     const vView = new Float32Array(buff, 4, vertexData.length);
-    vView.set(vertices);
+    vView.set(vertexData);
     const iView = new Uint16Array(buff, 4 + vertexData.byteLength, indexData.length);
     iView.set(indexData);
 
@@ -127,14 +126,14 @@ export class Shape implements DrawableNode<Shape> {
             if (!CACHE.has(this.constructor.name)) {
                 CACHE.set(
                     this.constructor.name,
-                    data.then<[Float32Array, Uint16Array]>((res) => {
+                    data.then((res) => {
                         const view = new DataView(res);
                         const n = view.getInt32(0, true) + 4;
                         return [new Float32Array(view.buffer.slice(4, n)), new Uint16Array(view.buffer.slice(n, view.byteLength))];
                     }),
                 );
             }
-            this.buffer = CACHE.get(this.constructor.name)!.then<[Float32Array, Uint16Array]>((res) => {
+            this.buffer = CACHE.get(this.constructor.name)!.then((res) => {
                 Reflect.set(this, "vertices",res[0].length);
                 Reflect.set(this, "indices", res[1].length);
                 return res;
@@ -255,6 +254,35 @@ export class Grid extends Shape {
             resolve(createGrid(xmax, ymax, step));
         });
         super(DrawType.LINES, id, type, data, {pos, color, pickColor: pick_color, display});
+    }
+}
+
+export class Test extends Shape {
+    constructor(
+        props: ShapeProps = shapePropsDefault,
+    ) {
+        const data = new Promise<ArrayBuffer>((resolve) => {
+            const vertices =  new Float32Array([
+                // xyz     uv   normal
+                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
+                 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0
+            ]);
+            const indicies = new Uint16Array([0, 1, 2]);
+
+
+            const buff = new ArrayBuffer(4 + vertices.byteLength + indicies.byteLength);
+            const view = new DataView(buff);
+            view.setInt32(0, vertices.byteLength, true);
+        
+            const vView = new Float32Array(buff, 4, vertices.length);
+            vView.set(vertices);
+            const iView = new Uint16Array(buff, 4 + vertices.byteLength, indicies.length);
+            iView.set(indicies);
+            
+            resolve(buff);
+        });
+        super(DrawType.TRIANGLE_STRIP, props.id, props.type, data, props);
     }
 }
 
