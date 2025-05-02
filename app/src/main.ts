@@ -22,7 +22,7 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
             location.reload();
         }
     };
-})(true);
+})(false);
 
 /**
  * Handle text

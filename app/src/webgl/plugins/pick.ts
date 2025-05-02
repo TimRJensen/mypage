@@ -126,7 +126,6 @@ function handler(gl: WebGL2RenderingContext, scene: Scene<Shape>, plugin: PickPl
     }
 };
 
-
 const EVENTS = ["pointermove", "pointerdown", "pointerup"];
 const DUMMY_DRIVER = new EventQueue<Shape, Event<Shape>>(null!);
 
