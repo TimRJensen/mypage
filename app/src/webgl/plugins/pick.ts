@@ -9,7 +9,7 @@ import {
 } from "../core.ts";
 import vs from "../shaders/vertex-pick.ts";
 import fs from "../shaders/fragment-pick.ts";
-import {FrameBufferObject, UniformInfo, UniformSetter} from "../common.ts";
+import {UniformInfo, UniformSetter} from "../common.ts";
 import {Scene, SceneEvent} from "../scene-driver.ts";
 import {Event, EventQueue} from "../event-driver.ts";
 
@@ -34,8 +34,36 @@ export class PickPluginEvent extends Event<Shape> {
     }
 }
 
-function handler(plugin: PickPlugin, gl: WebGL2RenderingContext, scene: Scene<Shape>, fbo: FrameBufferObject) {
+function fence(gl: WebGL2RenderingContext, plugin: PickPlugin) {
+    return new Promise<number>((resolve) => {
+        const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!;
+        gl.flush();
+
+        const fn = () => {
+            const status = gl.getSyncParameter(sync, gl.SYNC_STATUS);
+
+            if (status == gl.SIGNALED) {
+                const data = new Int16Array(1);
+                gl.bindBuffer(gl.PIXEL_PACK_BUFFER, plugin.pbo);
+                gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, data);
+                gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+                gl.deleteSync(sync);
+                plugin.fence = null;
+
+                resolve(data[0]);
+            } else {
+                requestAnimationFrame(fn);
+            }
+        }
+        fn();
+    });
+}
+
+function handler(gl: WebGL2RenderingContext, scene: Scene<Shape>, plugin: PickPlugin, ) {
     return (e: PointerEvent) => {
+        if (plugin.fence) {
+            return;
+        }
         /**
          * Note to future me:
          * Device space and clip space are not equal. The former is in pixels, the latter is in the range [-1, 1].
@@ -44,54 +72,57 @@ function handler(plugin: PickPlugin, gl: WebGL2RenderingContext, scene: Scene<Sh
          * cx == (ndcX + 1)*0.5*width
          * cy == (1 - ndcY)*0.5*height
          */
+        const [fbo] = scene.fbos;
         const rect = (gl.canvas as HTMLCanvasElement).getBoundingClientRect();
         const ndcX = ((e.clientX - rect.left)/rect.width)*2 - 1;
         const ndcY = ((e.clientY - rect.top)/rect.height)*2 - 1;
-        const data = new Int16Array(4);
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo.buff);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, plugin.pbo);
         gl.readBuffer(gl.COLOR_ATTACHMENT0 + plugin.n);
         gl.readPixels(
             ((ndcX + 1)*0.5)*fbo.width, ((-ndcY + 1)*0.5)*fbo.height,
             1, 1,
             plugin.readFormat,
             plugin.readType,
-            data,
+            0,
         );
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-        const id = data[0];
-        if (id == 0) {
-            scene.fire(
-                new PickPluginEvent(e.type, {
-                    id, shape: null!, movementX: e.movementX, movementY: e.movementY,
-                }),
-            );
-            return;
-        }
-
-        for (const shape of scene.drawables) {
-            if (shape.id == id) {
+        plugin.fence = fence(gl, plugin).then((id) => {
+            if (id == 0) {
                 scene.fire(
                     new PickPluginEvent(e.type, {
-                        id, shape, movementX: e.movementX, movementY: e.movementY,
-                    }),
-                );
-                break;
-            }
-
-            for (const child of shape) {
-                if (child.id != id) {
-                    continue;
-                }
-
-                scene.fire(
-                    new PickPluginEvent(e.type, {
-                        id, shape: child, movementX: e.movementX, movementY: e.movementY,
+                        id, shape: null!, movementX: e.movementX, movementY: e.movementY,
                     }),
                 );
                 return;
             }
-        }
+    
+            for (const shape of scene.drawables) {
+                if (shape.id == id) {
+                    scene.fire(
+                        new PickPluginEvent(e.type, {
+                            id, shape, movementX: e.movementX, movementY: e.movementY,
+                        }),
+                    );
+                    break;
+                }
+    
+                for (const child of shape) {
+                    if (child.id != id) {
+                        continue;
+                    }
+    
+                    scene.fire(
+                        new PickPluginEvent(e.type, {
+                            id, shape: child, movementX: e.movementX, movementY: e.movementY,
+                        }),
+                    );
+                    return;
+                }
+            }
+        });
     }
 };
 
@@ -100,13 +131,14 @@ const EVENTS = ["pointermove", "pointerdown", "pointerup"];
 const DUMMY_DRIVER = new EventQueue<Shape, Event<Shape>>(null!);
 
 export class PickPlugin implements PluginLike<Shape> {
-    readonly n;
-    readonly readFormat;
-    readonly readType;
+    readonly n: number;
+    readonly readFormat: GLenum;
+    readonly readType: GLenum;
+    readonly pbo: WebGLBuffer = null!;
+    public fence: Promise<void>|null = null;
     protected quad: WebGLProgram = null!;
     protected uniformInfo: Map<string, UniformInfo> = null!;
     protected setters:  Map<string, UniformSetter<Shape>> = null!;
-    protected handler: EventListener = null!;
 
     constructor(
         gl: WebGL2RenderingContext,
@@ -139,13 +171,21 @@ export class PickPlugin implements PluginLike<Shape> {
         this.readType = gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_TYPE);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
+        // Create a pixel buffer to read data asynchroniously
+        const pbo = gl.createBuffer();
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+        gl.bufferData(gl.PIXEL_PACK_BUFFER, 2, gl.STREAM_READ);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+        this.pbo = pbo;
+
         // Initialize events
-        let fn = <EventListener>handler(this, gl, scene, mainFBO);
+        scene.setters.set("u_id", (shape) => shape.id);
+        let fn = <EventListener>handler(gl, scene, this);
         for (let i = 0; i < EVENTS.length; i++) {
             gl.canvas.addEventListener(EVENTS[i], fn);
         }
 
-        scene.setters.set("u_id", (shape) => shape.id);
+        // Swwitch events on scene switch
         scene.on("switch", function (this: PickPlugin, e: SceneEvent<Shape>)  {
             e.prev.setters.delete("u_id");
             e.next.setters.set("u_id", (shape) => shape.id);
@@ -153,7 +193,7 @@ export class PickPlugin implements PluginLike<Shape> {
             for (let i = 0; i < EVENTS.length; i++) {
                 gl.canvas.removeEventListener(EVENTS[i], fn);
             }
-            fn = <EventListener>handler(this, gl, e.next, mainFBO);
+            fn = <EventListener>handler(gl, e.next, this);
             for (let i = 0; i < EVENTS.length; i++) {
                 gl.canvas.addEventListener(EVENTS[i], fn);
              }

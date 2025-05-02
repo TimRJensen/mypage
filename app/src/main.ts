@@ -16,13 +16,13 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
         return;
     }
 
-    const ws = new WebSocket("ws://192.168.0.107:4242");
+    const ws = new WebSocket("ws://192.168.0.244:4242");
     ws.onmessage = (msg) => {
         if (msg.data === "reload") {
             location.reload();
         }
     };
-})(false);
+})(true);
 
 /**
  * Handle text
@@ -200,6 +200,7 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
         a_normal: {type: WebGL2RenderingContext.FLOAT, len: 3, stride: 32, size: 4},
     }, {
         globals: {
+            fps: 60,
             color: [102, 51, 153],
             textures: {
                 "/static/imgs/atlas-logos.png": {
@@ -737,7 +738,7 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
     }, {
         threshold: 0.25,
     });
-    obs.observe(canvas);
+    // obs.observe(canvas);
 
     // Handle cloud
     const cloudStates = [0, 1, 2, 3, 4, 5, 6];
