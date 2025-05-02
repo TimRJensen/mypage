@@ -15,8 +15,11 @@ async function build() {
 async function handleHTTP(req: Request): Promise<Response> {
     await build();
 
+    const userAgent = req.headers.get("User-Agent")?.toLowerCase() || "";
+    const index = /googlebot|bingbot|duckduckbot/i.test(userAgent) ? "crawler.html" : "index.html"
+
     const url = new URL(req.url);
-    const path = Deno.cwd() + (url.pathname === "/" ? "/index.html" : decodeURI(url.pathname));
+    const path = Deno.cwd() + (url.pathname === "/" ? index : decodeURI(url.pathname));
     try {
         const file = await Deno.readFile(path);
         const ext = path.split(".").pop() || "txt";
