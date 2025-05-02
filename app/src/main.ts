@@ -738,7 +738,7 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
     }, {
         threshold: 0.25,
     });
-    // obs.observe(canvas);
+    obs.observe(canvas);
 
     // Handle cloud
     const cloudStates = [0, 1, 2, 3, 4, 5, 6];

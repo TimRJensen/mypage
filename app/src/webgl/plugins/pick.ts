@@ -131,8 +131,8 @@ const DUMMY_DRIVER = new EventQueue<Shape, Event<Shape>>(null!);
 
 export class PickPlugin implements PluginLike<Shape> {
     readonly n: number;
-    readonly readFormat: GLenum;
-    readonly readType: GLenum;
+    readonly readFormat: GLenum = null!;
+    readonly readType: GLenum = null!; 
     readonly pbo: WebGLBuffer = null!;
     public fence: Promise<void>|null = null;
     protected quad: WebGLProgram = null!;
