@@ -21,7 +21,7 @@ void main() {
     gl_Position = u_project*u_view*u_world*vec4(a_position, 1.0);
     v_uv = a_uv;
 
-    if ((u_type&0x2) == 2) {
+    if ((u_type&0x2) == 0x2) {
         v_view_normal = u_view_normal*a_position;
     } else {
         v_view_normal = u_view_normal*a_normal;

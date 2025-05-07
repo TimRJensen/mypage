@@ -1,6 +1,5 @@
 import {
     AttributeInfo,
-    AttributeObject,
     UniformObject,
     UniformInfo,
     TextureInfo,
@@ -8,6 +7,7 @@ import {
     FrameBufferObject,
     UniformSetter,
     Drawable,
+    AttributeObject,
 } from "./common.ts";
 import {Scene, SceneDriver} from "./scene-driver.ts";
 import {EventQueue, Event, EventMap, EventHandler} from "./event-driver.ts";
@@ -92,20 +92,11 @@ export function initializeProgram(gl: WebGL2RenderingContext, program: WebGLProg
     return true;
 }
 
-export function createProgram(gl: WebGL2RenderingContext, vs: string, fs: string): [boolean, WebGLProgram | null] {
-    const program = gl.createProgram();
-    if (!program) {
-        return [false, null];
-    }
-
-    return [initializeProgram(gl, program, vs, fs), program];
-}
-
 /**
  * Utility function to initialize attributes from a WebGL2 program.
  */
-export function initializeAtrtibutes(gl: WebGL2RenderingContext, program: WebGLProgram, attrs: AttributeInfo) {
-    const map = new Map<string, AttributeObject>();
+export function initializeAtrtibutes(gl: WebGL2RenderingContext, program: WebGLProgram, attrs: AttributeObject) {
+    const arr: Array<[string, AttributeInfo]> = [];
     const n = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
     for (let i = 0; i < n; i++) {
         const info = gl.getActiveAttrib(program, i);
@@ -115,78 +106,90 @@ export function initializeAtrtibutes(gl: WebGL2RenderingContext, program: WebGLP
 
         const name = info.name.split('[')[0];
         if (attrs[name]) {
-            const loc = gl.getAttribLocation(program, name);
-            map.set(name, {loc, type: info.type, ...attrs[name]});
+            arr.push([name, {loc: gl.getAttribLocation(program, name), type: info.type, ...attrs[name]}]);
         }
     }
+    arr.sort((a, b) => a[1].loc! - b[1].loc!)
 
-    return map;
+    return new Map(arr);
 }
 
 /**
  * Utility function to initialize uniforms from a WebGL2 program.
  */
 export function initializeUniforms(gl: WebGL2RenderingContext, program: WebGLProgram) {
-    const map = new Map<string, UniformInfo>();
+    const arr: Array<[string, UniformInfo]> = [];
     const n = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
     for (let i = 0; i < n; i++) {
         const info = gl.getActiveUniform(program, i);
         if (!info) {
             continue;
         }
+        arr.push([info.name, {loc: gl.getUniformLocation(program, info.name)!, type: info.type}]);
+    }
+    return new Map(arr);
+}
 
-        map.set(info.name.split("[")[0], {loc: gl.getUniformLocation(program, info.name)!, type: info.type});
+type Nullable<T> = T | null;
+
+export function createProgram(gl: WebGL2RenderingContext, vs: string, fs: string, attrs: AttributeObject
+): [Nullable<WebGLProgram>, Nullable<Map<string, AttributeInfo>>, Nullable<Map<string, UniformInfo>>] {
+    const program = gl.createProgram();
+    if (!program) {
+        return [null, null, null];
     }
 
-    return map;
+    if (!initializeProgram(gl, program, vs, fs)) {
+        return [null, null, null];
+    }
+
+    return [program, initializeAtrtibutes(gl, program, attrs), initializeUniforms(gl, program)];
 }
 
 /**
  * Utility function to create a static buffer from an ArrayBuffer.
  */
-export function createStaticBuffer(gl: WebGL2RenderingContext, data: Float32Array|Uint16Array, target?: GLenum, method?: number,): [boolean, WebGLBuffer | null] {
+export function createStaticBuffer(
+    gl: WebGL2RenderingContext, data: Float32Array|Uint16Array, target?: GLenum, method?: number
+): Nullable<WebGLBuffer> {
     const buffer = gl.createBuffer();
     if (!buffer) {
-        return [false, null];
+        return null;
     }
 
     gl.bindBuffer(target ?? gl.ARRAY_BUFFER, buffer);
     gl.bufferData(target ?? gl.ARRAY_BUFFER, data, method ?? gl.STATIC_DRAW);
-    return [true, buffer];
+    return buffer;
 }
 
 /**
  * Utility function to create a Vertex Array Object.
  */
 export function createVAO(
-    gl: WebGL2RenderingContext, attrs: Map<string, AttributeObject>, vbuff: WebGLBuffer, ibuff: WebGLBuffer | null = null,
-): [boolean, WebGLVertexArrayObject | null] {
+    gl: WebGL2RenderingContext, attrs: Map<string, AttributeInfo>, vbuff: Nullable<WebGLBuffer>, ibuff: Nullable<WebGLBuffer> = null,
+): Nullable<WebGLVertexArrayObject> {
     const vao = gl.createVertexArray();
     if (!vao) {
-        return [false, null];
+        return null;
     }
     gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, vbuff);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibuff!);
-
     let offset = 0;
-    for (const [name, { type, len, stride, size }] of attrs.entries()) {
-        const loc = attrs.get(name)?.loc!;
-        gl.enableVertexAttribArray(loc);
-
-        if (type === gl.FLOAT) {
-            gl.vertexAttribPointer(loc, len, type, false, stride, offset);
+    for (const {loc, type, len, stride, size} of attrs.values()) {
+                if (type == gl.FLOAT) {
+            gl.vertexAttribPointer(loc!, len, type, false, stride, offset);
         } else {
-            gl.vertexAttribIPointer(loc, len, type!, stride, offset);
+            gl.vertexAttribIPointer(loc!, len, type!, stride, offset);
         }
-
-        offset += len * size;
+        gl.enableVertexAttribArray(loc!);
+        offset += len*size;
     }
     gl.bindVertexArray(null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-    return [true, vao];
+    return vao;
 }
 
 /**
@@ -194,7 +197,7 @@ export function createVAO(
  */
 export function createTextureArrayBuffer(
     gl: WebGL2RenderingContext, data: Uint8ClampedArray, width: number, height: number, info: TextureObject,
-) {
+): Nullable<WebGLTexture> {
     const tex = gl.createTexture(), pbo = gl.createBuffer();
     if (!tex || !pbo) {
         return null;
@@ -230,7 +233,8 @@ export function createTextureArrayBuffer(
     return tex;
 }
 
-export function createTextureBuffer(gl: WebGL2RenderingContext, data: Uint8ClampedArray, info: TextureObject) {
+export function createTextureBuffer(gl: WebGL2RenderingContext, data: Uint8ClampedArray, info: TextureObject
+): Nullable<WebGLTexture> {
     const tex = gl.createTexture();
     if (!tex) {
         return null;
@@ -293,37 +297,40 @@ function loadTexture(gl: WebGL2RenderingContext, texInfo?: TextureInfo) {
     return Promise.all(promises);
 }
 
+function textureInternalFormat(type: GLenum) {
+    switch (type) {
+        case WebGL2RenderingContext.RGBA8:
+            return WebGL2RenderingContext.RGBA;
+    }
+    return 0;
+}
+
 export function attachTextureBuffer(
     gl: WebGL2RenderingContext, fbo: FrameBufferObject, type: GLenum, n = 0,
-) {
+): Nullable<WebGLTexture> {
     const tex = gl.createTexture();
     if (!tex) {
         return null;
     }
+    const format = textureInternalFormat(type);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
-    gl.activeTexture(gl.TEXTURE0 + n);
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texStorage2D(gl.TEXTURE_2D, 1, type, fbo.width, fbo.height);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
+    gl.texImage2D(gl.TEXTURE_2D, 0, format, fbo.width, fbo.height, 0, format, gl.UNSIGNED_BYTE, null);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + n, gl.TEXTURE_2D, tex, 0);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    if (n < fbo.attachments.length) {
-        fbo.attachments[n] = {tex: tex, type};
-    } else {
-        fbo.attachments.push({tex: tex, type});
-    }
+    fbo.attachments.push({tex, type});
 
     return tex;
 }
 
 export function attachMSAARenderBuffer(
     gl: WebGL2RenderingContext, fbo: FrameBufferObject, type: GLenum, n = 0, samples = 4,
-) {
+): Nullable<WebGLRenderbuffer> {
     const rb = gl.createRenderbuffer();
     if (!rb) {
         return null
@@ -345,7 +352,8 @@ export function attachMSAARenderBuffer(
     return rb;
 }
 
-export function attachDepthBuffer(gl: WebGL2RenderingContext, fbo: FrameBufferObject): WebGLRenderbuffer | null {
+export function attachDepthBuffer(gl: WebGL2RenderingContext, fbo: FrameBufferObject
+): Nullable<WebGLRenderbuffer> {
     const depth = gl.createRenderbuffer();
     if (!depth) {
         return null;
@@ -363,7 +371,7 @@ export function attachDepthBuffer(gl: WebGL2RenderingContext, fbo: FrameBufferOb
 
 export function attachMSAADepthBuffer(
     gl: WebGL2RenderingContext, fbo: FrameBufferObject, samples = 4,
-): WebGLRenderbuffer | null {
+): Nullable<WebGLRenderbuffer> {
     const depth = gl.createRenderbuffer();
     if (!depth) {
         return null;
@@ -385,95 +393,54 @@ export function attachMSAADepthBuffer(
  */
 export function createFrameBufferObject(
     gl: WebGL2RenderingContext, width: number, height: number, type: GLenum = gl.RGBA8, depth = true,
-): [boolean, FrameBufferObject | null] {
+): Nullable<FrameBufferObject> {
     const fb = gl.createFramebuffer();
     if (!fb) {
-        return [false, null];
+        return null;
     }
 
     const fbo = new FrameBufferObject(fb, width, height);
     if (depth) {
         attachTextureBuffer(gl, fbo, type);
         attachDepthBuffer(gl, fbo);
-        return [true, fbo];
+        return fbo;
     }
     attachTextureBuffer(gl, fbo, type);
-    return [true, fbo];
+    return fbo;
 }
 
 export function createMSAAFrameBufferObject(
     gl: WebGL2RenderingContext, width: number, height: number, type: GLenum = gl.RGBA8, samples = 4, depth = true,
-): [boolean, FrameBufferObject | null] {
-
+): Nullable<FrameBufferObject> {
     const fb = gl.createFramebuffer();
     if (!fb) {
-        return [false, null];
+        return null;
     }
 
     const fbo = new FrameBufferObject(fb, width, height, samples);
     if (depth) {
         attachMSAARenderBuffer(gl, fbo, type, 0, samples);
         attachMSAADepthBuffer(gl, fbo, samples);
-        return [true, fbo];
+        return fbo;
     }
     attachMSAARenderBuffer(gl, fbo, type, 0, samples);
-    return [true, fbo];
+    return fbo;
 }
 
 export function resizeFrameBufferObject(
     gl: WebGL2RenderingContext, fbo: FrameBufferObject, width: number, height: number, downscale = true,
 ) {
-    switch (true) {
-        case !downscale:
-            break;
-        case width >= 3840:
-            width = 2560;
-            height = Math.trunc((width/16)*9);
-            break;
-        case width >= 3200:
-            width = 1920;
-            height = Math.trunc((width/16)*9);
-            break;
-        case width >= 2560:
-            width = 1600;
-            height = Math.trunc((width/16)*9);
-            break;
-        case width >= 1920:
-            width = 1366;
-            height = Math.trunc((width/16)*9);
-            break;
-        case width >= 1600:
-            width = 1280;
-            height = Math.trunc((width/16)*9);
-            break;
-        case width >= 1366:
-            width = 1024;
-            height = Math.trunc((width/16)*9);
-            break;
-        case width >= 1280:
-            width = 960;
-            height = Math.trunc((width/16)*9);
-            break;
-        default:
-            width = 854;
-            height = Math.trunc((width/16)*9);
-    }
-
     fbo.width = Math.trunc(width);
     fbo.height = Math.trunc(height);
 
     for (let i = 0; i < fbo.attachments.length; i++) {
         const {tex, type} = fbo.attachments[i];
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
         if (fbo.samples > 0) {
-            gl.bindRenderbuffer(gl.RENDERBUFFER, tex);
-            gl.deleteRenderbuffer(tex);
-            attachMSAARenderBuffer(gl, fbo, type, i, fbo.samples);
+            // gl.bindRenderbuffer(gl.RENDERBUFFER, tex);
         } else {
-            gl.activeTexture(gl.TEXTURE0 + i);
+            const format = textureInternalFormat(type);
             gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.deleteTexture(tex);
-            attachTextureBuffer(gl, fbo, type, i);
+            gl.texImage2D(gl.TEXTURE_2D, 0, format, fbo.width, fbo.height, 0, format, gl.UNSIGNED_BYTE, null);
         }
     }
 
@@ -482,36 +449,29 @@ export function resizeFrameBufferObject(
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
-    gl.deleteRenderbuffer(fbo.depth);
+    // gl.deleteRenderbuffer(fbo.depth);
     if (fbo.samples > 0) {
-        attachMSAADepthBuffer(gl, fbo, fbo.samples);
+        // attachMSAADepthBuffer(gl, fbo, fbo.samples);
     } else {
-        attachDepthBuffer(gl, fbo);
+        // attachDepthBuffer(gl, fbo);
     }
 }
 
-/**
- * Plugin event.
- */
+//########################################################
+//# Plugin specific
+//########################################################
 export interface PluginLike<T extends Drawable<T>> {
     ready(gl: WebGL2RenderingContext, scene: Scene<T>): void;
     before(gl: WebGL2RenderingContext, scene: Scene<T>): void;
     after(gl: WebGL2RenderingContext, scene: Scene<T>): void;
 }
+
 type PluginLikeConstructor<T extends Drawable<T>> = 
     new (gl: WebGL2RenderingContext, scene: Scene<T>) => PluginLike<T>;
 
-/**
- * A WebGL2 program wrapper.
- */
-const VERTICES = new Float32Array([
-    // xy   uv
-    -1, 1, 0, 1,
-    -1, -1, 0, 0,
-    1, 1, 1, 1,
-    1, -1, 1, 0,
-]);
-
+//########################################################
+//# Scene specific
+//########################################################
 type SceneObject<T extends Drawable<T>> = {
     name: string;
     drawables: Array<T>;
@@ -523,8 +483,7 @@ type SceneObject<T extends Drawable<T>> = {
 type SceneInfo<T extends Drawable<T>> = {
     globals?: {
         fps?: number;
-        downscale?: boolean;
-        drawables?: Array<T>;
+        downsample?: number;
         textures?: TextureInfo;
         setters?: UniformObject<T>;
         color?: [number, number, number];
@@ -535,8 +494,7 @@ type SceneInfo<T extends Drawable<T>> = {
 const sceneInfoDefault = {
     globals: {
         fps: 60,
-        downscale: true,
-        drawables: [],
+        downsample: 2,
         textures: {},
         setters: {},
         color: <[number, number, number]>[0, 0, 0],
@@ -544,11 +502,22 @@ const sceneInfoDefault = {
     scenes: [],
 }
 
+//########################################################
+//# Program specific
+//########################################################
+const VERTICES = new Float32Array([
+    // xy           uv
+    -1,1,               0,1,
+    -1,-1,              0,0,
+    1,1,                1,1,
+    1,-1,               1,0,
+]);
+
 export class Program<T extends Drawable<T>> {
-    // Internal state
     protected gl: WebGL2RenderingContext = null!;
     protected programs: Array<WebGLProgram> = null!;
-    protected vao: WebGLVertexArrayObject = null!;
+    protected quadVAO: WebGLVertexArrayObject = null!;
+    protected uniforms: Map<string, UniformInfo> = null!;
     protected fbos: Array<FrameBufferObject> = null!;
     protected sceneDriver: SceneDriver<T> = null!; 
     protected eventQueue: EventQueue<T, Event<T>> = null!;
@@ -557,17 +526,17 @@ export class Program<T extends Drawable<T>> {
     protected rdy: Promise<unknown> = null!;
     protected time = 0;
     protected fps = 60;
+    protected tex: WebGLTexture = null!
 
     constructor(
         readonly canvas: HTMLCanvasElement,
-        vs: string,
-        fs: string,
-        attribs: AttributeInfo,
+        vertexShader: string,
+        fragmentShader: string,
+        attributes: AttributeObject,
         {
             globals = {
                 fps: 60,
-                downscale: true,
-                drawables: [], 
+                downsample: 2,
                 setters: {}, 
                 textures: <TextureInfo>{}
             }, 
@@ -575,7 +544,7 @@ export class Program<T extends Drawable<T>> {
         }: SceneInfo<T> = sceneInfoDefault,
         plugins: Array<PluginLikeConstructor<T>> = [],
     ) {
-        const gl = canvas.getContext("webgl2");
+        const gl = canvas.getContext("webgl2", {antialias: false});
         if (!gl) {
             console.error("WebGL2 not supported");
             return;
@@ -584,272 +553,245 @@ export class Program<T extends Drawable<T>> {
 
         // Initalize textures. Do this first as it is async.
         const promises: Array<Promise<unknown>> = [];
-        let promise: Promise<unknown>|null = promises[0];
+        const textures = new Map<string, Map<string, WebGLTexture|null>>();
         if (globals.textures) {
-            promise = loadTexture(gl, globals.textures).then((res) => {
-                return res;
-            });
-            promises.push(promise);
+            promises.push(loadTexture(gl, globals.textures).then((res) => {
+                const map = new Map<string, WebGLTexture|null>();
+                for (const [key, tex] of <Array<[string, WebGLTexture]>>res) {
+                    map.set((map.size/2).toString(), tex);
+                    map.set(key, tex);
+                }
+                textures.set("globals", map);
+            }));
         };
-        const textures: Array<Map<string, WebGLTexture|null>> = [];
         for (const scene of scenes) {
+            if (!scene.textures) {
+                continue;
+            }
             const map = new Map<string, WebGLTexture|null>();
-            if (scene.textures) {
-                promises.push(loadTexture(gl, scene.textures).then((res) => {
-                    for (const [key, tex] of res) {
-                        map.set((map.size/2).toString(), tex);
-                        map.set(key, tex);
-                    }
-                }));
-            }
-
-            if (promise) {
-                promise.then((res) => {
-                    for (const [key, tex] of <Array<[string, WebGLTexture]>>res) {
-                        map.set((map.size/2).toString(), tex);
-                        map.set(key, tex);
-                    }
-                });
-            }
-            textures.push(map);
+            promises.push(loadTexture(gl, scene.textures).then((res) => {
+                for (const [key, tex] of res) {
+                    map.set((map.size/2).toString(), tex);
+                    map.set(key, tex);
+                }
+            }));
+            textures.set(scene.name, map);
         }
-        promise = null;
 
         // Program draws everything to a fbo. This allows plugins to obtain that fbo,
         // and extend it with their own drawing logic. So start by creating a quad,
         // and if that fails, just return.
-        const [ok_quad, quad] = createProgram(gl, quadvs, quadfs);
-        if (!ok_quad) {
-            return;
-        }
-
-        // Initialize quad attributes
-        const quad_attribs = initializeAtrtibutes(gl, quad!, {
-            a_position: {type: gl.FLOAT, len: 2, stride: 16, size: 4},
-            a_texcoord: {type: gl.FLOAT, len: 2, stride: 16, size: 4},
+        const [quad, quadAttrs] = createProgram(gl, quadvs, quadfs, {
+            "a_position": {type: gl.FLOAT, len: 2, size: 4, stride: 16},
+            "a_uv": {type: gl.FLOAT, len: 2, size: 4, stride: 16},
         });
+        if (!quad) {
+            return
+        };
 
-        // Create quad VAO
-        const [ok_buff, buff] = createStaticBuffer(gl, VERTICES);
-        if (!ok_buff) {
+        const quadVAO = createVAO(gl, quadAttrs!, createStaticBuffer(gl, VERTICES));
+        if (!quadVAO) {
             return;
         }
-
-        const [ok_vao, vao] = createVAO(gl, quad_attribs, buff!, null!);
-        if (!ok_vao) {
-            return;
-        }
-
-        // Create the main program
-        const [ok_main, main] = createProgram(gl, vs, fs);
-        if (!ok_main) {
-            return;
-        }
-
-        // Initialize attributes
-        const mainAttribs = initializeAtrtibutes(gl, main!, attribs ?? {});
         
-        // Initialize uniforms
-        const uniformInfo = initializeUniforms(gl, main!);
-        const setters: Array<Map<string, UniformSetter<T>>> = [];
-        for (const scene of scenes) {
+        // Create the main program
+        const [main, mainAttrs, mainUniforms] = createProgram(gl, vertexShader, fragmentShader, attributes);
+        if (!main) {
+            return;
+        }
+        const setters = new Map<string, Map<string, UniformSetter<T>>>();
+        if (globals.setters) {
             const map = new Map<string, UniformSetter<T>>();
-            for (const [key, setter] of Object.entries({...globals.setters, ...scene.setters})) {
+            for (const [key, setter] of Object.entries(globals.setters)) {
                 map.set(key, setter);
             }
-            setters.push(map);
+            setters.set("globals", map);
+        }
+        for (const scene of scenes) {
+            if (!scene.setters) {
+                continue;
+            }
+            const map = new Map<string, UniformSetter<T>>();
+            for (const [key, setter] of Object.entries(scene.setters)) {
+                map.set(key, setter);
+            }
+            setters.set(scene.name, map);
         }
         
         // Initialize object VAOs
-        if (globals.drawables && globals.drawables.length > 0) {
-            promise = Promise.all(globals.drawables.map((drawable) => drawable.buffer)).then((res) => {
-                return res;
-            });
-            promises.push(promise);
-        }
-        
-        const vaos: Array<Map<T, WebGLVertexArrayObject>> = [];
+        const vaos = new Map<string, Map<T, WebGLVertexArrayObject>>();
         const drawables = new Map<string, Array<T>>();
         for (const scene of scenes) {
             const map = new Map<T, WebGLVertexArrayObject>();
-            drawables.set(scene.name, [...scene.drawables]);
-
             for (const drawable of scene.drawables) {
                 promises.push(drawable.buffer.then((res) => {
-                    const [vOK, vBuff] = createStaticBuffer(gl, res[0]);
-                    if (!vOK) {
-                        return;
-                    }
-        
-                    const [iOK, iBuff] = createStaticBuffer(gl, res[1], gl.ELEMENT_ARRAY_BUFFER);
-                    if (!iOK) {
-                        return;
-                    }
-        
-                    const [ok, vao] = createVAO(gl, mainAttribs, vBuff!, iBuff);
-                    if (!ok) {
-                        return;
-                    }
-
+                    const vao = createVAO(
+                        gl,
+                        mainAttrs!,
+                        createStaticBuffer(gl, res[0]),
+                        createStaticBuffer(gl, res[1], gl.ELEMENT_ARRAY_BUFFER)
+                    );
                     map.set(drawable, vao!);
                 }));
             }
-            vaos.push(map);
+            vaos.set(scene.name, map);
+            drawables.set(scene.name, [...scene.drawables]);
         }
 
-        // Initialize frambuffer
-        const [msaaOK, msaaFBO] = createMSAAFrameBufferObject(gl, canvas.width, canvas.height);
-        if (!msaaOK) {
-            return;
-        }
-        const [mainOK, mainFBO] = createFrameBufferObject(gl, canvas.width, canvas.height, gl.RGBA8, false);
-        if (!mainOK) {
-            return;
-        }
-        const [outOK, outFBO] = createFrameBufferObject(gl, canvas.width, canvas.height,  gl.RGBA8, false);
-        if (!outOK) {
-            return;
-        }
+        // Initialize FBOs
+        // const msaaFBO = createMSAAFrameBufferObject(gl, canvas.width, canvas.height);
+        // const mainFBO = createFrameBufferObject(gl, canvas.width, canvas.height, gl.RGBA8, false);
+        // const outFBO = createFrameBufferObject(gl, canvas.width, canvas.height, gl.RGBA8, false);
+        // if (!msaaFBO || !mainFBO || !outFBO) {
+        //     return;
+        // }
 
         // Wait for document to load
         promises.push(new Promise<void>((resolve) => {
-            globalThis.addEventListener("load", () => {
-                resolve();
-            });
+            globalThis.addEventListener("load", () => resolve());
         }));
 
         this.gl = gl;
-        this.programs = [main!, quad!];
-        this.fbos = [mainFBO!, msaaFBO!, outFBO!];
-        this.vao = vao!;
+        this.programs = [main, quad];
+        this.quadVAO = quadVAO;
         this.fps = globals.fps!;
-        this.rdy = Promise.all(promises);
-        this.rdy.then(() => {
+        this.rdy = Promise.all(promises).then(() => {
             const dpi = Math.min(devicePixelRatio || 1, 2);
+            const downsample = 1/globals.downsample!
             const width = canvas.clientWidth*dpi;
             const height = canvas.clientHeight*dpi;
             gl.canvas.width = width;
             gl.canvas.height = height;
-            resizeFrameBufferObject(gl, this.fbos[0], width, height, globals.downscale);
-            resizeFrameBufferObject(gl, this.fbos[1], width, height, globals.downscale);
-            resizeFrameBufferObject(gl, this.fbos[2], width, height, false);
+            const msaaFBO = createMSAAFrameBufferObject(gl, width*downsample, height*downsample);
+            const mainFBO = createFrameBufferObject(gl, width*downsample, height*downsample, gl.RGBA8, false);
+            const outFBO = createFrameBufferObject(gl, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA8, false);
+            if (!msaaFBO || !mainFBO || !outFBO) {
+                return;
+            }
+            this.fbos = [mainFBO, msaaFBO, outFBO];
+
+            if (textures.has("globals")) {
+                const entries = textures.get("globals")!;
+                for (const scene of scenes) {
+                    const map = textures.get(scene.name) ?? new Map();
+                    for (const [k, v] of entries) {
+                        map.set(k, v);
+                    }
+                    textures.set(scene.name, map);
+                }
+            }
+
+            if (setters.has("globals")) {
+                const entries = setters.get("globals")!;
+                for (const scene of scenes) {
+                    const map = setters.get(scene.name) ?? new Map();
+                    for (const [k, v] of entries) {
+                        map.set(k, v);
+                    }
+                    setters.set(scene.name, map);
+                }
+            }
 
             const map = new Map<string, Scene<T>>();
-            for (const scene of scenes.reverse()) {
+            for (const scene of scenes) {
                 const {name, color} = scene;
                 map.set(scene.name, new Scene<T>(
                     this.eventQueue,
                     this.fbos.slice(0, 2),
-                    vaos.pop()!,
+                    vaos.get(name)!,
                     drawables.get(name)!,
-                    textures.pop()!,
-                    setters.pop()!,
-                    uniformInfo,
+                    textures.get(name)!,
+                    setters.get(name)!,
+                    mainUniforms!,
                     color ?? globals?.color
                 ));
             }
-            this.sceneDriver = new SceneDriver<T>(map, scenes[scenes.length - 1].name);
+            this.sceneDriver = new SceneDriver<T>(map, scenes[0].name);
 
-            for (const plugin of plugins) {
-                const i = this.plugins.length;
-                this.plugins.push(new plugin(gl, this.sceneDriver.scene()));
-                this.plugins[i].ready(gl, this.sceneDriver.scene());
+            for (const Plugin of plugins) {
+                this.plugins.push(new Plugin(gl, this.sceneDriver.scene()));
             }
         });
     }
 
     protected draw(time: number) {
         if (time - this.time < 1000/this.fps) {
-            requestAnimationFrame(this.draw.bind(this));
+            requestAnimationFrame(this.draw);
             return;
         }
         this.time = time;
-
+        
         const {gl} = this;
         const [mainFBO, msaaFBO, outFBO] = this.fbos;
         const scene = this.sceneDriver.scene();
-        const {setters, uniformInfo, vaos, drawables, color} = scene;
+        const {vaos, drawables, color} = scene;
 
-        // Consume plugins (before). This is a good place to clear attachments.
+        // Consume plugins (before)
         for (const plugin of this.plugins) {
-            plugin.before(this.gl, scene);
+            plugin.before(gl, scene);
         }
-
-        // Clear MSAA fbo.
-        gl.bindFramebuffer(gl.FRAMEBUFFER, msaaFBO.buff);
-        gl.drawBuffers(msaaFBO.attachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
-        for (let i = 0; i < msaaFBO.attachments.length; i++) {
-            if (!i) {
-                gl.clearBufferfv(gl.COLOR, i, new Float32Array([...color, 1]));
-            } else {
-                gl.clearBufferfv(gl.COLOR, i, new Float32Array([0, 0, 0, 0]));
-            }
-        }
-        gl.clearBufferfi(gl.DEPTH_STENCIL, 0, 1.0, 0);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         // Use main program
         gl.useProgram(this.programs[0]);
         gl.viewport(0, 0, msaaFBO.width, msaaFBO.height);
-        gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
-        gl.depthFunc(gl.LEQUAL);
+        gl.enable(gl.CULL_FACE);
 
-        // Set static textures & uniforms
+        // Clear framebuffer
+        gl.bindFramebuffer(gl.FRAMEBUFFER, msaaFBO.buff);
+        gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+        gl.clearColor(...color, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        const {setters, uniformInfo} = scene;
         for (const [key, val] of setters.entries()) {
-            if (!uniformInfo.has(key) || val instanceof Function) {
+            if (!uniformInfo.has(key)) {
                 continue;
             }
             switch (typeof val) {
                 case "number":
                 case "object":
                     setUniform(gl, uniformInfo.get(key)!, val);
+                    break;
             }
         }
 
-        // Draw to MSAA framebuffer
-        gl.clearColor(...color, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, msaaFBO.buff);
-        gl.drawBuffers(msaaFBO.attachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
-        for (let i = 0; i < drawables.length; i++) {
-            gl.bindVertexArray(vaos.get(drawables[i])!);
-            drawables[i].draw(gl, scene, 0);
+        // Draw geometry
+        gl.drawBuffers(msaaFBO.attachments.map((_, i) => gl.COLOR_ATTACHMENT0+i));
+        for (const drawable of drawables) {
+            gl.bindVertexArray(vaos.get(drawable)!);
+            drawable.draw(gl, scene, 0);
             gl.bindVertexArray(null);
         }
-        gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.disable(gl.CULL_FACE);
         gl.disable(gl.DEPTH_TEST);
 
-        // Blit MSAA framebuffer to main framebuffer
-        const colorAttachment = <Array<GLenum>>[];
+        // Blit to main framebuffer
+        const drawBuffers = [];
         for (let i = 0; i < msaaFBO.attachments.length; i++) {
-            colorAttachment.push(gl.COLOR_ATTACHMENT0 + i);
             gl.bindFramebuffer(gl.READ_FRAMEBUFFER, msaaFBO.buff);
             gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, mainFBO.buff);
-            gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
-            gl.drawBuffers(colorAttachment);
+            gl.readBuffer(gl.COLOR_ATTACHMENT0+i);
+            drawBuffers.push(gl.COLOR_ATTACHMENT0+i)
+            gl.drawBuffers(drawBuffers);
             gl.blitFramebuffer(
                 0, 0, msaaFBO.width, msaaFBO.height,
                 0, 0, mainFBO.width, mainFBO.height,
                 gl.COLOR_BUFFER_BIT,
                 gl.NEAREST,
             );
-            colorAttachment[i] = gl.NONE;
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+            drawBuffers[i] = gl.NONE;
         }
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
-        // Consume plugins (after). This is a good place to do post-processing.
-        for (const plugin of this.plugins!) {
+        // Consume plugins (after)
+        for (const plugin of this.plugins) {
             plugin.after(gl, scene);
         }
 
-        gl.bindFramebuffer(gl.FRAMEBUFFER, outFBO.buff);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-       
-        // Blit to output framebuffer
+        // Blit to out framebuffer
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, mainFBO.buff);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, outFBO.buff);
         gl.readBuffer(gl.COLOR_ATTACHMENT0);
@@ -863,30 +805,31 @@ export class Program<T extends Drawable<T>> {
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
-        // Use quad program
+        // Use quad
         gl.useProgram(this.programs[1]);
         gl.viewport(0, 0, outFBO.width, outFBO.height);
-        gl.disable(gl.CULL_FACE);
-        gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.depthMask(false);
 
-        // Draw scene
+        // Clear quad
         gl.clear(gl.COLOR_BUFFER_BIT);
+
+        // Draw quad
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, outFBO.attachments[0].tex);
-        gl.bindVertexArray(this.vao);
-        gl.depthMask(false);
+        gl.bindVertexArray(this.quadVAO);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        gl.depthMask(true);
-        gl.bindVertexArray(null);
+        gl.disable(gl.BLEND);
+        // gl.depthMask(true);
         gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindVertexArray(null);
 
         // Flush events
         this.eventQueue.fire(new Event<T>("done", {shape: null!}));
         this.eventQueue.flush();
 
-        requestAnimationFrame(this.draw.bind(this));
+        requestAnimationFrame(this.draw);
     }
 
     switch (name: string) {
@@ -911,7 +854,8 @@ export class Program<T extends Drawable<T>> {
         }
         this.rendering = true;
         this.rdy.then(() => {
-            requestAnimationFrame(this.draw.bind(this));
+            this.draw = this.draw.bind(this);
+            this.draw(0);
         });
     }
 

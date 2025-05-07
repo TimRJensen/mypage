@@ -1,4 +1,4 @@
-export type AttributeObject = {
+export type AttributeInfo = {
     loc?: number;
     type?: number;
     len: number;
@@ -6,8 +6,8 @@ export type AttributeObject = {
     size: number;
 };
 
-export type AttributeInfo = {
-    [key: string]: AttributeObject;
+export type AttributeObject = {
+    [key: string]: AttributeInfo;
 };
 
 export type UniformInfo = {

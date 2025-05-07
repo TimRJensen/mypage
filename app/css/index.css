@@ -168,10 +168,9 @@ body {
 /* Canvas */
 #canvas-box {
   position: relative;
-  width: 100vw;
-  min-height: 100vh;
+  width: 100vmax;
+  height: 100vmin;
   perspective-origin: -150%;
-
   overflow: hidden;
 }
 
@@ -222,7 +221,6 @@ body {
 #canvas-box #canvas {
   width: 100vmax;
   height: 100vmin;
-  aspect-ratio: inherit;
   background-color: orange;
   touch-action: none;
 }

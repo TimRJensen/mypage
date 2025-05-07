@@ -1,12 +1,11 @@
 export default `#version 300 es
-precision highp float;
-precision highp int;
+precision mediump float;
 
-in vec2 v_texcoord;
+in vec2 v_uv;
 out vec4 f_color;
 
 uniform sampler2D u_tex;
 
 void main() {
-    f_color = texture(u_tex, v_texcoord);
+    f_color = texture(u_tex, v_uv);
 }`;

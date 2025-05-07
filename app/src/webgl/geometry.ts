@@ -223,13 +223,18 @@ export class Shape implements DrawableNode<Shape> {
             return;
         }
 
-
         const {setters, uniformInfo} = scene;
         for (const [key, val] of setters.entries()) {
-            if (!uniformInfo.has(key) || !(val instanceof Function)) {
+            if (!uniformInfo.has(key)) {
                 continue;
-            }                
-            setUniform(gl, uniformInfo.get(key)!, val(this));
+            }
+            switch (typeof val) {
+                case "function":
+                    if (key == "u_type") console.log(val(this));
+                    setUniform(gl, uniformInfo.get(key)!, val(this));
+                    break;
+            }
+
         }
 
         if (this.indices > 0) {
@@ -263,13 +268,16 @@ export class Test extends Shape {
     ) {
         const data = new Promise<ArrayBuffer>((resolve) => {
             const vertices =  new Float32Array([
-                // xyz     uv   normal
-                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-                 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
-                 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0
+                // xyz              uv      normal
+                -.5,-.5, -.5,       0.0,0.0, 0.0, 0.0, 0.0,
+                0.5,-.5, -.5,       0.0,0.0, 0.0, 0.0, 0.0,
+                0.0,0.4, -.5,       0.0,0.0, 0.0, 0.0, 0.0,
+            
+                -.5,0.5, 0.5,       1.0,0.0, 0.0, 0.0, 0.0,
+                0.5,0.5, 0.5,       1.0,0.0, 0.0, 0.0, 0.0,
+                0.0,-.4, 0.5,       1.0,0.0, 0.0, 0.0, 0.0,
             ]);
             const indicies = new Uint16Array([0, 1, 2]);
-
 
             const buff = new ArrayBuffer(4 + vertices.byteLength + indicies.byteLength);
             const view = new DataView(buff);
@@ -282,7 +290,7 @@ export class Test extends Shape {
             
             resolve(buff);
         });
-        super(DrawType.TRIANGLE_STRIP, props.id, props.type, data, props);
+        super(DrawType.TRIANGLES, props.id, props.type, data, props);
     }
 }
 

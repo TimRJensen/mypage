@@ -22,7 +22,7 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
             location.reload();
         }
     };
-})(false);
+})(true);
 
 /**
  * Handle text
@@ -200,7 +200,8 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
         a_normal: {type: WebGL2RenderingContext.FLOAT, len: 3, stride: 32, size: 4},
     }, {
         globals: {
-            fps: 60,
+            fps: 30,
+            downsample: 2,
             color: [102, 51, 153],
             textures: {
                 "/static/imgs/atlas-logos.png": {
@@ -256,24 +257,23 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
                 name: "test",
                 color: [102, 51, 153],
                 drawables: [
-                    shapes[0],
-                    new Node({id: 1, pos: [0.0, 0.0, -0.7059]}),
                     new Test(), 
                 ],
                 setters: {
                     u_world: (shape) => shape.world,
                     u_type: (shape) => shape.type,
-                    u_picked: (shape) => picked.some((id) => id == shape.id) ? 1 : 0,
-                    u_color: (shape) => picked.some((id) => id == shape.id) ? shape.pickColor : shape.color,
-                    u_depth: (shape) => shape.id == CLOUD ? cloudState : shape.depth,
+                    u_color: (shape) => shape.color,
                 }
             }
         ],
     }, [
         BloomPlugin,
-        PickPlugin,
+        // PickPlugin,
     ]);
     await program.ready();
+    const picked = [-1, -1, -1, -1, -1];
+    
+    program.render();
 
     // Handle drag
     const bounds = [[1.5, -1.5], [0.5, -1.75]];
@@ -322,7 +322,6 @@ import {SceneEvent} from "./webgl/scene-driver.ts";
 
     // Handle pick (click)
     // picked[0] == root, picked[1 && 2] == hovered, picked[3 && 4] == focused
-    const picked = [-1, -1, -1, -1, -1];
     const srcXZ = [0, 0];
     const trgXZ = [0, 0];
     const duration = 500;

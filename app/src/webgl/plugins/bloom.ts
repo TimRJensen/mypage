@@ -3,8 +3,6 @@ import {
     attachTextureBuffer,
     attachMSAARenderBuffer,
     createProgram,
-    initializeAtrtibutes,
-    initializeUniforms,
     setUniform,
     createFrameBufferObject,
     createStaticBuffer,
@@ -27,7 +25,7 @@ const VERTICES = new Float32Array([
 ]);
 const ATTRIB_OBJECT = {
     a_position: {type: WebGL2RenderingContext.FLOAT, len: 2, stride: 16, size: 4},
-    a_texcoord: {type: WebGL2RenderingContext.FLOAT, len: 2, stride: 16, size: 4},
+    a_uv: {type: WebGL2RenderingContext.FLOAT, len: 2, stride: 16, size: 4},
 };
 const SHADERS = [blurfs, blendfs, fs]
 
@@ -51,34 +49,27 @@ export class BloomPlugin implements PluginLike<Shape> {
 
         // Create the bloom programs
         for (const shader of SHADERS) {
-            const [ok, quad] = createProgram(gl, vs, shader);
-            if (!ok) {
+            const [quad, quadAttrs, quadUniforms] = createProgram(gl, vs, shader, ATTRIB_OBJECT);
+            if (!quad) {
                 console.error("Bloom Plugin: Failed to create program");
                 return;
             }
-
-            const attribs = initializeAtrtibutes(gl, quad!, ATTRIB_OBJECT);
-            const uniforms = initializeUniforms(gl, quad!);
-
-            const [ok_buff, buff] = createStaticBuffer(gl, VERTICES);
-            if (!ok_buff) {
+            
+            const  buff = createStaticBuffer(gl, VERTICES);
+            const vao = createVAO(gl, quadAttrs!, buff!);
+            if (!vao) {
                 return;
             }
 
-            const [ok_vao, vao] = createVAO(gl, attribs, buff!);
-            if (!ok_vao) {
-                return;
-            }
-
-            this.uniforms.push(uniforms);
+            this.uniforms.push(quadUniforms!);
             this.quads.push(quad!);
             this.vaos.push(vao!);
         }
 
         // Create the bloom framebuffer objects
         for (let i = 0; i < 3; i++) {
-            const [ok, bloomFBO] = createFrameBufferObject(gl, mainFBO.width, mainFBO.height, gl.RGBA8, false,);
-            if (!ok) {
+            const bloomFBO = createFrameBufferObject(gl, mainFBO.width, mainFBO.height, gl.RGBA8, false,);
+            if (!bloomFBO) {
                 console.error("Bloom Plugin: Failed to create framebuffer object");
                 return;
             }
@@ -89,9 +80,14 @@ export class BloomPlugin implements PluginLike<Shape> {
     ready(): void {}
 
     before(gl: WebGL2RenderingContext, scene: Scene<Shape>) {
-        const [fbo] = scene.fbos;
+        const [fbo, msaaFBO] = scene.fbos;
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
         gl.drawBuffers(fbo.attachments.map((_, i) => i == this.n ? gl.COLOR_ATTACHMENT0 + i : gl.NONE));
+        gl.clearBufferfv(gl.COLOR, this.n, new Float32Array([0, 0, 0, 0]));
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, msaaFBO.buff);
+        gl.drawBuffers(msaaFBO.attachments.map((_, i) => i == this.n ? gl.COLOR_ATTACHMENT0 + i : gl.NONE));
         gl.clearBufferfv(gl.COLOR, this.n, new Float32Array([0, 0, 0, 0]));
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
