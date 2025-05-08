@@ -1,6 +1,6 @@
 export default `#version 300 es
-precision highp float;
-precision highp int;
+precision mediump  int;
+precision mediump  float;
 
 layout(location=0) in vec3 a_position;
 layout(location=1) in vec2 a_uv;

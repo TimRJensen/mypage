@@ -1,7 +1,7 @@
 import {mat4, vec3} from "../linalg.ts";
 import {DrawableNode} from "./common.ts";
-import { setUniform } from "./core.ts";
-import { Scene } from "./scene-driver.ts";
+import {setUniform } from "./core.ts";
+import {Scene} from "./scene-driver.ts";
 
 const WHITE: [number, number, number] = [255, 255, 255];
 const BLACK: [number, number, number] = [0, 0, 0];
@@ -230,7 +230,6 @@ export class Shape implements DrawableNode<Shape> {
             }
             switch (typeof val) {
                 case "function":
-                    if (key == "u_type") console.log(val(this));
                     setUniform(gl, uniformInfo.get(key)!, val(this));
                     break;
             }

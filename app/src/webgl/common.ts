@@ -1,4 +1,4 @@
-export type AttributeInfo = {
+export type AttributeObject = {
     loc?: number;
     type?: number;
     len: number;
@@ -6,8 +6,8 @@ export type AttributeInfo = {
     size: number;
 };
 
-export type AttributeObject = {
-    [key: string]: AttributeInfo;
+export type AttributeInfo = {
+    [key: string]: AttributeObject;
 };
 
 export type UniformInfo = {
@@ -26,7 +26,7 @@ export type TextureInfo = {
     [key: string]: TextureObject;
 };
 
-export type UniformSetter<T> = number | Float32Array | Int32Array | ((shape: T) => number | Float32Array | Int32Array)
+export type UniformSetter<T> = number | Float32Array | Int16Array | ((shape: T) => number | Float32Array | Int16Array)
 export type UniformObject<T> = Record<string, UniformSetter<T>>;
 
 export interface DrawableScene<T> {

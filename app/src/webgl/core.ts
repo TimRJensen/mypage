@@ -14,7 +14,7 @@ import {EventQueue, Event, EventMap, EventHandler} from "./event-driver.ts";
 import quadvs from "./shaders/vertex-quad.ts";
 import quadfs from "./shaders/fragment-quad.ts";
 
-export function setUniform(gl: WebGL2RenderingContext, info: UniformInfo, data: Float32Array | Int32Array | number): void {
+export function setUniform(gl: WebGL2RenderingContext, info: UniformInfo, data: Float32Array | Int16Array | number): void {
     if (!info) {
         return;
     }
@@ -28,7 +28,7 @@ export function setUniform(gl: WebGL2RenderingContext, info: UniformInfo, data: 
             if (typeof data === "number") {
                 gl.uniform1i(loc, data);
             } else {
-                gl.uniform1iv(loc, <Int32Array> data);
+                gl.uniform1iv(loc, <Int16Array> data);
             }
             break;
         case gl.FLOAT:
@@ -37,6 +37,9 @@ export function setUniform(gl: WebGL2RenderingContext, info: UniformInfo, data: 
             } else {
                 gl.uniform1fv(loc, <Float32Array> data);
             }
+            break;
+        case gl.INT_VEC2:
+            gl.uniform2iv(loc, <Int16Array> data);
             break;
         case gl.FLOAT_VEC2:
             gl.uniform2fv(loc, <Float32Array> data);
@@ -59,6 +62,9 @@ export function setUniform(gl: WebGL2RenderingContext, info: UniformInfo, data: 
     }
 }
 
+//########################################################
+//# WebGL2 program specific
+//########################################################
 /**
  * Utility function to create a WebGL2 shader.
  */
@@ -75,7 +81,7 @@ export function createShader(gl: WebGL2RenderingContext, src: string, type: GLen
 }
 
 /**
- * Utility function to attach and link shaders to a WebGL2 program.
+ * Utility function to attach and link shaders for a WebGL2 program.
  */
 export function initializeProgram(gl: WebGL2RenderingContext, program: WebGLProgram, vs: string, fs: string) {
     gl.attachShader(program, createShader(gl, vs, gl.VERTEX_SHADER));
@@ -93,10 +99,10 @@ export function initializeProgram(gl: WebGL2RenderingContext, program: WebGLProg
 }
 
 /**
- * Utility function to initialize attributes from a WebGL2 program.
+ * Utility function to initialize attributes for a WebGL2 program.
  */
-export function initializeAtrtibutes(gl: WebGL2RenderingContext, program: WebGLProgram, attrs: AttributeObject) {
-    const arr: Array<[string, AttributeInfo]> = [];
+export function initializeAtrtibutes(gl: WebGL2RenderingContext, program: WebGLProgram, attrs: AttributeInfo) {
+    const arr: Array<[string, AttributeObject]> = [];
     const n = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
     for (let i = 0; i < n; i++) {
         const info = gl.getActiveAttrib(program, i);
@@ -115,7 +121,7 @@ export function initializeAtrtibutes(gl: WebGL2RenderingContext, program: WebGLP
 }
 
 /**
- * Utility function to initialize uniforms from a WebGL2 program.
+ * Utility function to initialize uniforms for a WebGL2 program.
  */
 export function initializeUniforms(gl: WebGL2RenderingContext, program: WebGLProgram) {
     const arr: Array<[string, UniformInfo]> = [];
@@ -132,8 +138,11 @@ export function initializeUniforms(gl: WebGL2RenderingContext, program: WebGLPro
 
 type Nullable<T> = T | null;
 
-export function createProgram(gl: WebGL2RenderingContext, vs: string, fs: string, attrs: AttributeObject
-): [Nullable<WebGLProgram>, Nullable<Map<string, AttributeInfo>>, Nullable<Map<string, UniformInfo>>] {
+/**
+ * Utility function to create a WebGL2 program.
+ */
+export function createProgram(gl: WebGL2RenderingContext, vs: string, fs: string, attrs: AttributeInfo
+): [Nullable<WebGLProgram>, Nullable<Map<string, AttributeObject>>, Nullable<Map<string, UniformInfo>>] {
     const program = gl.createProgram();
     if (!program) {
         return [null, null, null];
@@ -146,8 +155,11 @@ export function createProgram(gl: WebGL2RenderingContext, vs: string, fs: string
     return [program, initializeAtrtibutes(gl, program, attrs), initializeUniforms(gl, program)];
 }
 
+//########################################################
+//# WebGL2 buffer specific
+//########################################################
 /**
- * Utility function to create a static buffer from an ArrayBuffer.
+ * Utility function to create a WebGL2 buffer.
  */
 export function createStaticBuffer(
     gl: WebGL2RenderingContext, data: Float32Array|Uint16Array, target?: GLenum, method?: number
@@ -163,10 +175,10 @@ export function createStaticBuffer(
 }
 
 /**
- * Utility function to create a Vertex Array Object.
+ * Utility function to create a WebGL2 Vertex Array Object.
  */
 export function createVAO(
-    gl: WebGL2RenderingContext, attrs: Map<string, AttributeInfo>, vbuff: Nullable<WebGLBuffer>, ibuff: Nullable<WebGLBuffer> = null,
+    gl: WebGL2RenderingContext, attrs: Map<string, AttributeObject>, vbuff: Nullable<WebGLBuffer>, ibuff: Nullable<WebGLBuffer> = null,
 ): Nullable<WebGLVertexArrayObject> {
     const vao = gl.createVertexArray();
     if (!vao) {
@@ -192,8 +204,11 @@ export function createVAO(
     return vao;
 }
 
+//########################################################
+//# WebGl 2 texture specific
+//########################################################
 /**
- * Utility function to create a texture array buffer from an HTMLImageElement.
+ * Utility function to create a WebGL2 texture array buffer.
  */
 export function createTextureArrayBuffer(
     gl: WebGL2RenderingContext, data: Uint8ClampedArray, width: number, height: number, info: TextureObject,
@@ -233,6 +248,9 @@ export function createTextureArrayBuffer(
     return tex;
 }
 
+/**
+ * Utility function to create a WebGL2 texture buffer.
+ */
 export function createTextureBuffer(gl: WebGL2RenderingContext, data: Uint8ClampedArray, info: TextureObject
 ): Nullable<WebGLTexture> {
     const tex = gl.createTexture();
@@ -253,9 +271,8 @@ export function createTextureBuffer(gl: WebGL2RenderingContext, data: Uint8Clamp
     return tex;
 }
 
-/**
- * Internal function to load textures from a TextureInfo object.
- */
+
+//Internal function to load textures from a TextureInfo object. 
 function loadTexture(gl: WebGL2RenderingContext, texInfo?: TextureInfo) {
     if (!texInfo) {
         return Promise.resolve([]);
@@ -304,7 +321,12 @@ function textureInternalFormat(type: GLenum) {
     }
     return 0;
 }
-
+//########################################################
+//# WebGL2 framebuffer specific
+//########################################################
+/**
+ * Utility function to attach a texture to a framebuffer object.
+ */
 export function attachTextureBuffer(
     gl: WebGL2RenderingContext, fbo: FrameBufferObject, type: GLenum, n = 0,
 ): Nullable<WebGLTexture> {
@@ -319,7 +341,8 @@ export function attachTextureBuffer(
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
-    gl.texImage2D(gl.TEXTURE_2D, 0, format, fbo.width, fbo.height, 0, format, gl.UNSIGNED_BYTE, null);
+    // gl.texImage2D(gl.TEXTURE_2D, 0, format, fbo.width, fbo.height, 0, format, gl.UNSIGNED_BYTE, null);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, type, fbo.width, fbo.height);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + n, gl.TEXTURE_2D, tex, 0);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -328,30 +351,9 @@ export function attachTextureBuffer(
     return tex;
 }
 
-export function attachMSAARenderBuffer(
-    gl: WebGL2RenderingContext, fbo: FrameBufferObject, type: GLenum, n = 0, samples = 4,
-): Nullable<WebGLRenderbuffer> {
-    const rb = gl.createRenderbuffer();
-    if (!rb) {
-        return null
-    };
-    const maxSamples = Math.max(samples, gl.getParameter(gl.MAX_SAMPLES));
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
-    gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
-    gl.renderbufferStorageMultisample(gl.RENDERBUFFER, maxSamples, type, fbo.width, fbo.height);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + n, gl.RENDERBUFFER, rb);
-    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    if (n < fbo.attachments.length) {
-        fbo.attachments[n] = {tex: rb, type};
-    } else {
-        fbo.attachments.push({tex: rb, type});
-    }
-
-    return rb;
-}
-
+/**
+ * Utility function to attach a depth buffer to a framebuffer object.
+ */
 export function attachDepthBuffer(gl: WebGL2RenderingContext, fbo: FrameBufferObject
 ): Nullable<WebGLRenderbuffer> {
     const depth = gl.createRenderbuffer();
@@ -369,6 +371,36 @@ export function attachDepthBuffer(gl: WebGL2RenderingContext, fbo: FrameBufferOb
     return depth;
 }
 
+/**
+ * Utility function to attach a MSAA texture to a framebuffer object.
+ */
+export function attachMSAABuffer(
+    gl: WebGL2RenderingContext, fbo: FrameBufferObject, type: GLenum, n = 0, samples = 4,
+): Nullable<WebGLRenderbuffer> {
+    const rb = gl.createRenderbuffer();
+    if (!rb) {
+        return null
+    };
+    const maxSamples = Math.min(samples, gl.getParameter(gl.MAX_SAMPLES));
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+    gl.renderbufferStorageMultisample(gl.RENDERBUFFER, maxSamples, type, fbo.width, fbo.height);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + n, gl.RENDERBUFFER, rb);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    if (n < fbo.attachments.length) {
+        fbo.attachments[n] = {tex: rb, type};
+    } else {
+        fbo.attachments.push({tex: rb, type});
+    }
+
+    return rb;
+}
+
+/**
+ * Utility function to attach a MSAA depth buffer to a framebuffer object.
+ */
 export function attachMSAADepthBuffer(
     gl: WebGL2RenderingContext, fbo: FrameBufferObject, samples = 4,
 ): Nullable<WebGLRenderbuffer> {
@@ -376,7 +408,7 @@ export function attachMSAADepthBuffer(
     if (!depth) {
         return null;
     }
-    const maxSamples = Math.max(samples, gl.getParameter(gl.MAX_SAMPLES));
+    const maxSamples = Math.min(samples, gl.getParameter(gl.MAX_SAMPLES));
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
     gl.bindRenderbuffer(gl.RENDERBUFFER, depth);
     gl.renderbufferStorageMultisample(gl.RENDERBUFFER, maxSamples, gl.DEPTH_COMPONENT16, fbo.width, fbo.height);
@@ -409,6 +441,9 @@ export function createFrameBufferObject(
     return fbo;
 }
 
+/**
+ * Utility function to create a MSAA framebuffer object.
+ */
 export function createMSAAFrameBufferObject(
     gl: WebGL2RenderingContext, width: number, height: number, type: GLenum = gl.RGBA8, samples = 4, depth = true,
 ): Nullable<FrameBufferObject> {
@@ -419,11 +454,11 @@ export function createMSAAFrameBufferObject(
 
     const fbo = new FrameBufferObject(fb, width, height, samples);
     if (depth) {
-        attachMSAARenderBuffer(gl, fbo, type, 0, samples);
+        attachMSAABuffer(gl, fbo, type, 0, samples);
         attachMSAADepthBuffer(gl, fbo, samples);
         return fbo;
     }
-    attachMSAARenderBuffer(gl, fbo, type, 0, samples);
+    attachMSAABuffer(gl, fbo, type, 0, samples);
     return fbo;
 }
 
@@ -532,7 +567,7 @@ export class Program<T extends Drawable<T>> {
         readonly canvas: HTMLCanvasElement,
         vertexShader: string,
         fragmentShader: string,
-        attributes: AttributeObject,
+        attributes: AttributeInfo,
         {
             globals = {
                 fps: 60,
@@ -544,7 +579,7 @@ export class Program<T extends Drawable<T>> {
         }: SceneInfo<T> = sceneInfoDefault,
         plugins: Array<PluginLikeConstructor<T>> = [],
     ) {
-        const gl = canvas.getContext("webgl2", {antialias: false});
+        const gl = canvas.getContext("webgl2");
         if (!gl) {
             console.error("WebGL2 not supported");
             return;
@@ -736,8 +771,10 @@ export class Program<T extends Drawable<T>> {
         gl.viewport(0, 0, msaaFBO.width, msaaFBO.height);
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-        // Clear framebuffer
+        // Clear MSAA framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, msaaFBO.buff);
         gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
         gl.clearColor(...color, 1);
@@ -766,8 +803,9 @@ export class Program<T extends Drawable<T>> {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.disable(gl.CULL_FACE);
         gl.disable(gl.DEPTH_TEST);
+        gl.disable(gl.BLEND);
 
-        // Blit to main framebuffer
+        // Blit MSAA franebyffer to main framebuffer
         const drawBuffers = [];
         for (let i = 0; i < msaaFBO.attachments.length; i++) {
             gl.bindFramebuffer(gl.READ_FRAMEBUFFER, msaaFBO.buff);
@@ -786,12 +824,20 @@ export class Program<T extends Drawable<T>> {
             drawBuffers[i] = gl.NONE;
         }
 
+        // gl.useProgram(this.programs[1]);
+        // gl.activeTexture(gl.TEXTURE0);
+
+        // gl.bindTexture(gl.TEXTURE_2D, mainFBO.attachments[2].tex);
+        // gl.bindVertexArray(this.quadVAO);
+        // gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        // return
+
         // Consume plugins (after)
         for (const plugin of this.plugins) {
             plugin.after(gl, scene);
         }
 
-        // Blit to out framebuffer
+        // Blit main framebuffer to out framebuffer
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, mainFBO.buff);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, outFBO.buff);
         gl.readBuffer(gl.COLOR_ATTACHMENT0);
@@ -808,9 +854,7 @@ export class Program<T extends Drawable<T>> {
         // Use quad
         gl.useProgram(this.programs[1]);
         gl.viewport(0, 0, outFBO.width, outFBO.height);
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        // gl.depthMask(false);
+        gl.depthMask(false);
 
         // Clear quad
         gl.clear(gl.COLOR_BUFFER_BIT);
@@ -821,7 +865,7 @@ export class Program<T extends Drawable<T>> {
         gl.bindVertexArray(this.quadVAO);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         gl.disable(gl.BLEND);
-        // gl.depthMask(true);
+        gl.depthMask(true);
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindVertexArray(null);
 

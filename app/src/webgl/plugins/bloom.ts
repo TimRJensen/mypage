@@ -1,7 +1,7 @@
 import {Shape} from "../geometry.ts";
 import {
     attachTextureBuffer,
-    attachMSAARenderBuffer,
+    attachMSAABuffer,
     createProgram,
     setUniform,
     createFrameBufferObject,
@@ -45,7 +45,7 @@ export class BloomPlugin implements PluginLike<Shape> {
         const [mainFBO, msaaFBO] = scene.fbos;
         this.n = mainFBO.attachments.length;
         attachTextureBuffer(gl, mainFBO, gl.RGBA8, this.n);
-        attachMSAARenderBuffer(gl, msaaFBO!, gl.RGBA8, this.n);
+        attachMSAABuffer(gl, msaaFBO!, gl.RGBA8, this.n);
 
         // Create the bloom programs
         for (const shader of SHADERS) {
