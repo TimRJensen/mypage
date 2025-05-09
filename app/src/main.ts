@@ -22,7 +22,7 @@ import hints from "./hints.ts";
             location.reload();
         }
     };
-})(true);
+})(false);
 
 /**
  * Handle text
@@ -77,10 +77,10 @@ import hints from "./hints.ts";
         // Frontend
         new Node({id: 0x20, pos: [0.0, 0.0, 0.5321], scale: [2.5, 1.0, 1.5], shapes: [
             new Text(1, 7, {pos: [0.0, 0.0025, -0.077], rotation: [Math.PI, 0.0, 0.0]}),
-            new Edge([0.0, 0.06, 0.5571], [0.0, 0.06, -0.0869]),
+            new Edge([0.0, 0.06, 0.5571], [0.0, 0.06, -0.0869], 0x20),
             new Texture(0, 0, {id: 0x200, pos: [0.0000, 0.0, 0.5900]}),
             new Texture(0, 1, {id: 0x201, pos: [-0.1846, 0.0, 0.5519], shapes: [
-                new Plane(0, {type: ShapeType.BACKGROUND, pos: [0.0, 0.1, 0.0]}),
+                new Plane(0, {id: 0x201, type: ShapeType.BACKGROUND, pos: [0.0, 0.1, 0.0]}),
             ]}),
             new Texture(0, 2, {id: 0x202, pos: [0.1846, 0.0, 0.5519]}),
             new Texture(0, 3, {id: 0x203, pos: [-0.3391, 0.0, 0.4437]}),
@@ -91,24 +91,24 @@ import hints from "./hints.ts";
         // Backend
         new Node({id: 0x21, pos: [-0.6190, 0.0, 0.2845], shapes: [
             new Text(1, 8, {pos: [0.077, 0.0025, -0.077], rotation: [Math.PI, -Math.PI/4, 0.0]}),
-            new Edge([-0.6190, 0.06, 0.2845], [0.0, 0.06, -0.0869]),
+            new Edge([-0.6190, 0.06, 0.2845], [0.0, 0.06, -0.0869], 0x21),
             new Texture(0, 7, {id: 0x210, pos: [0.2331, 0.0, 0.4038]}),
             new Texture(0, 8, {id: 0x211, pos: [0.0809, 0.0, 0.4591]}),
             new Texture(0, 9, {id: 0x212, pos: [-0.0810, 0.0, 0.4591]}),
             new Texture(0, 10, {id: 0x213, pos: [-0.2331, 0.0, 0.4037]}),
             new Texture(0, 11, {id: 0x214, pos: [-0.3571, 0.0, 0.2997]}),
             new Texture(0, 12, {id: 0x215, pos: [-0.4381, 0.0, 0.1595], shapes: [
-                new Plane(0, {type: ShapeType.BACKGROUND, pos: [0.0, 0.1, 0.0]}),
+                new Plane(0, {id: 0x215, type: ShapeType.BACKGROUND, pos: [0.0, 0.1, 0.0]}),
             ]}),
         ]}),
         // All purpose
         new Node({id: 0x22, pos: [0.6190, 0.00, 0.2845], shapes: [
             new Text(1, 9, {pos: [-0.077, 0.0025, -0.077], rotation: [Math.PI, Math.PI/4, 0.0]}),
-            new Edge([0.6190, 0.06, 0.2845], [0.0, 0.06, -0.0869]),
+            new Edge([0.6190, 0.06, 0.2845], [0.0, 0.06, -0.0869], 0x22),
             new Texture(0, 13, {id: 0x220, pos: [-0.2331, 0.0, 0.4038]}),
             new Texture(0, 14, {id: 0x221, pos: [-0.0406, 0.0, 0.4644]}),
             new Texture(0, 15, {id: 0x222, pos: [0.1595, 0.0, 0.4381], shapes: [
-                new Plane(0, {type: ShapeType.BACKGROUND, pos: [0.0, 0.1, 0.0]}),
+                new Plane(0, {id: 0x222, type: ShapeType.BACKGROUND, pos: [0.0, 0.1, 0.0]}),
             ]}),
             new Texture(0, 16, {id: 0x223, pos: [0.3297, 0.0, 0.3297]}),
             new Texture(0, 17, {id: 0x224, pos: [0.4381, 0.0, 0.1595]}),
@@ -116,12 +116,12 @@ import hints from "./hints.ts";
         // Technical skills
         new Node({id: 0x2, pos: [0.0, 0.0, -0.0869], shapes: [
             new Text(1, 10, {pos: [0.0, 0.0025, -0.1155], rotation: [Math.PI, 0.0, 0.0]}),
-            new Edge([0.0, 0.07, -0.1113], [0.0, 0.06, -0.7092]),
+            new Edge([0.0, 0.07, -0.1113], [0.0, 0.06, -0.7092], 0x2),
         ]}),
         // Projects
         new Node({id: 0x3, pos: [0.4952, 0.0, -0.4583], shapes: [
             new Text(1, 13, {pos: [-0.05, 0.0025, -0.05], rotation: [Math.PI, Math.PI/4, 0.0]}),
-            new Edge([0.4952, 0.07, -0.4583], [0.024, 0.06, -0.7092]),
+            new Edge([0.4952, 0.07, -0.4583], [0.024, 0.06, -0.7092], 0x3),
             new Texture(2, 1, {id: 0x302, pos: [0.5571, 0.0, 0.3095], rotation: [-Math.PI/2, 0.0, 0.75]}),
             new Texture(2, 2, {id: 0x301, pos: [0.2747, 0.0, 0.1500], rotation: [-Math.PI/2, 0.0, 0.5]}),
             new Texture(2, 0, {id: 0x300, pos: [0.3885, 0.0, 0.0], rotation: [-Math.PI/2, 0.0, 0.5]}),
@@ -129,12 +129,12 @@ import hints from "./hints.ts";
         // About me
         new Node({id: 0x41, pos: [-1.1142, 0.0, 0.0369], shapes: [
             new Text(1, 11, {pos: [0.077, 0.0025, -0.077], rotation: [Math.PI, -Math.PI/4, 0.0]}),
-            new Edge([-1.1142, 0.06, 0.0369], [-0.4952, 0.06, -0.4583]),
+            new Edge([-1.1142, 0.06, 0.0369], [-0.4952, 0.06, -0.4583], 0x41),
         ]}),
         // Personal skills
         new Node({id: 0x4, pos: [-0.4952, 0.0, -0.4583], shapes: [
             new Text(1, 12, {pos: [0.077, 0.0025, -0.077], rotation: [Math.PI, -Math.PI/4, 0.0]}),
-            new Edge([-0.4952, 0.07, -0.4583], [-0.024, 0.06, -0.7092]),
+            new Edge([-0.4952, 0.07, -0.4583], [-0.024, 0.06, -0.7092], 0x4),
             new Texture(0, 18, {id: 0x400, pos: [0.0619, 0.0, 0.3885], scale: [1.1, 1.0, 1.1]}),
             new Texture(0, 19, {id: 0x401, pos: [-0.0868, 0.0, 0.3589], scale: [0.75, 1.0, 0.75]}),
             new Texture(0, 20, {id: 0x402, pos: [-0.2128, 0.0, 0.2747], scale: [0.75, 1.0, 0.75]}),
@@ -145,15 +145,15 @@ import hints from "./hints.ts";
         new RootNode({id: 1, pos: [0.0, 0.0, -0.7059]}),
         // Help
         new Node({id: 0x50, pos: [0.0, 0.0, 0.5321], shapes: [
-            new Edge([0.0, 0.06, 0.5321], [0.0, 0.06, -0.0869]),
+            new Edge([0.0, 0.06, 0.5321], [0.0, 0.06, -0.0869], 0x50),
             new Texture(0, 23, {id: 0x500, pos: [0.0, 0.0, 0.3714]}),
         ]}),
         new Node({id: 0x5, pos: [0.0, 0.0, -0.0869], shapes: [
-            new Edge([0.0, 0.06, -0.0869], [0.0, 0.06, -0.7059]),
+            new Edge([0.0, 0.06, -0.0869], [0.0, 0.06, -0.7059], 0x5),
         ]}),
         new Node({id: 0x6, pos: [0.0, 0.0, -0.7059]}),
         // Hand
-        new Texture(0, 24, {id: 0x7, display: "fixed", pos: [0.3714, 0.0, -0.3345], scale: [0.5, 1.0, 0.5]}),
+        new Texture(0, 24, {display: "fixed", pos: [0.3714, 0.0, -0.3345], scale: [0.5, 1.0, 0.5]}),
         // Cloud
         new Text(1, 0, {id: 0x8, display: "fixed", pos: [0.0, 0.3714, 1.1142], rotation: [-Math.PI/2, 0.0, 0.0], scale: [3.0, 1.0, 1.5], shapes: [
             new Circle({type: ShapeType.SHADOW, pos: [0.0, -0.3610, 0.0], color: [0, 0, 0]}),
@@ -201,7 +201,7 @@ import hints from "./hints.ts";
         a_normal: {type: WebGL2RenderingContext.FLOAT, len: 3, stride: 32, size: 4},
     }, {
         globals: {
-            fps: 30,
+            fps: 60,
             downsample: 2,
             color: [102, 51, 153],
             textures: {
@@ -262,15 +262,12 @@ import hints from "./hints.ts";
         PickPlugin,
     ]);
     await program.ready();
-    console.log( new Float32Array([(6&0xFF)/0xFF, ((6>>8)&0xFF)/0xFF, 0, 0]))
 
     // Handle drag
     const bounds = [[1.5, -1.5], [0.5, -1.75]];
     let panning = 0;
     let pointer = -1;
     canvas.addEventListener("pointermove", (e) => {
-        e.preventDefault();
-
         if (pointer == -1) {
             return;
         }
@@ -288,9 +285,7 @@ import hints from "./hints.ts";
 
         view = mat4.lookAt(cam, center, up);
     }, {passive: false});
-    canvas.addEventListener("pointerup", (e) => {
-        e.preventDefault();
-
+    canvas.addEventListener("pointerup", () => {
         if (pointer == -1) {
             return;
         }
@@ -299,8 +294,6 @@ import hints from "./hints.ts";
         pointer = -1;
     }, {passive: false});
     canvas.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-
         if (panning == 1) {
             return;
         }
@@ -407,6 +400,7 @@ import hints from "./hints.ts";
                 picked[0] = e.id < FIRST ? ROOT : HELP, picked[3] = e.id, picked[4] = -1;
                 map.get(picked[0])!.shape.focus();
                 e.shape.focus();
+                e.shape.parent()?.focus();
                 break;
             case e.id >> 4 == PERSONAL_SKILLS:
             case e.id >> 4 == PROJECTS:
@@ -416,6 +410,7 @@ import hints from "./hints.ts";
                 map.get(picked[0])!.shape.focus();
                 map.get(picked[3])!.shape.focus();
                 e.shape.focus();
+                e.shape.parent()?.focus();
                 if (e.id in hints) {
                     moveInfoBox(e.shape.world, e.id, infoBox);
                 }
@@ -465,6 +460,7 @@ import hints from "./hints.ts";
                 picked[0] = e.id < FIRST ? ROOT : HELP, picked[1] = e.id, picked[2] = -1;
                 map.get(picked[0])!.shape.show();
                 e.shape.show();
+                e.shape.parent()?.show();
                 return;
             case e.id >> 4 == PERSONAL_SKILLS:
             case e.id >> 4 == PROJECTS:
@@ -474,6 +470,7 @@ import hints from "./hints.ts";
                 map.get(picked[0])!.shape.show();
                 map.get(picked[1])!.shape.show();
                 e.shape.show();
+                e.shape.parent()?.show();
                 return;
             case e.id >> 8 == PERSONAL_SKILLS:
             case e.id >> 8 == PROJECTS:
@@ -483,6 +480,7 @@ import hints from "./hints.ts";
                 map.get(picked[0])!.shape.show();
                 map.get(picked[1])!.shape.show();
                 e.shape.show();
+                e.shape.parent()?.show();
                 return;
             default:
                 if (picked[3] != -1) {
@@ -734,7 +732,7 @@ import hints from "./hints.ts";
     let cloudTrigger = 0;
     let cloudTimer = 0;
     program.on("pointerdown", (e: PickPluginEvent) => {
-        e.preventDefault();
+        // e.preventDefault();
 
         if (e.id != CLOUD || cloudState != 0) {
             return;
@@ -774,18 +772,19 @@ import hints from "./hints.ts";
     });
 
     program.on("pointerup", (e) => {
-        e.preventDefault();
+        // e.preventDefault();
         if (cloudState == cloudStates[6]) {
             cloudState = cloudStates[0];
         }
         cloudDrag = false;
+        console.log("foo")
     });
 
     program.on("pointermove", (e: PickPluginEvent) => {
+        // e.preventDefault();
         if (!cloudDrag) {
             return;
         }
-        e.preventDefault();
         clearInterval(cloudTimer);
         cloudState = cloudStates[6];
 

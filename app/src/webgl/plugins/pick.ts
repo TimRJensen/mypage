@@ -36,14 +36,13 @@ function fence(gl: WebGL2RenderingContext, plugin: PickPlugin) {
             const status = gl.getSyncParameter(sync, gl.SYNC_STATUS);
 
             if (status == gl.SIGNALED) {
-                const data = new Uint8Array(4);
+                const data = new Uint16Array(1);
                 gl.bindBuffer(gl.PIXEL_PACK_BUFFER, plugin.pbo);
                 gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, data);
                 gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
                 gl.deleteSync(sync);
                 plugin.fence = null;
-                console.log(data)
-                resolve(data[0] + (data[1]<<8) + (data[2]<<16) + (data[3]<<24));
+                resolve(data[0]);
             } else {
                 requestAnimationFrame(fn);
             }
@@ -128,7 +127,7 @@ export class PickPlugin implements PluginLike<Shape> {
     readonly readType: GLenum = null!; 
     readonly pbo: WebGLBuffer = null!;
     public fence: Promise<void>|null = null;
-    protected quad: WebGLProgram = null!;
+    protected pick: WebGLProgram = null!;
     protected uniformInfo: Map<string, UniformInfo> = null!;
     protected setters:  Map<string, UniformSetter<Shape>> = null!;
 
@@ -137,23 +136,28 @@ export class PickPlugin implements PluginLike<Shape> {
         scene: Scene<Shape>,
     ) {
         // Extend the framebuffer object
-        gl.getExtension("EXT_color_buffer_float");
-        const [mainFBO, msaaFBO] = scene.fbos;
+        const [mainFBO] = scene.fbos;
         this.n = mainFBO.attachments.length;
         attachTextureBuffer(gl, mainFBO, gl.R16I, this.n);
 
         // Create the pick program
-        const [ok, quad] = createProgram(gl, vs, fs, {
+        const [pick, _, uniformInfo] = createProgram(gl, vs, fs, {
             a_position: {type: gl.FLOAT, len: 3, stride: 24, size: 12},
             a_uv: {type: gl.FLOAT, len: 2, stride: 24, size: 12},
         });
-        if (!ok) {
+        if (!pick) {
             console.error("Pick Plugin: Failed to create program");
             return;
         }
-        this.quad = quad!;
-
-        // Initialize the attributes & uniforms
+        this.pick = pick!;
+        this.uniformInfo = uniformInfo!;
+        
+        // Create a pixel buffer to read data asynchroniously
+        const pbo = gl.createBuffer();
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+        gl.bufferData(gl.PIXEL_PACK_BUFFER, 4, gl.STREAM_READ);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+        this.pbo = pbo;
 
         // Get device specific read format & type
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, mainFBO.buff);
@@ -161,13 +165,6 @@ export class PickPlugin implements PluginLike<Shape> {
         this.readFormat = gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_FORMAT);
         this.readType = gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_TYPE);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-        // Create a pixel buffer to read data asynchroniously
-        const pbo = gl.createBuffer();
-        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
-        gl.bufferData(gl.PIXEL_PACK_BUFFER, 4, gl.STREAM_READ);
-        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-        this.pbo = pbo;
 
         // Initialize events
         scene.setters.set("u_id", (shape) => shape.id);
@@ -193,20 +190,15 @@ export class PickPlugin implements PluginLike<Shape> {
     ready() {/**no-op */}
 
     before(gl: WebGL2RenderingContext, scene: Scene<Shape>) {
-        const [mainFBO, msaaFBO] = scene.fbos;
+        const [mainFBO] = scene.fbos;
         gl.bindFramebuffer(gl.FRAMEBUFFER, mainFBO.buff);
         gl.drawBuffers(mainFBO.attachments.map((_, i) => i == this.n ? gl.COLOR_ATTACHMENT0 + i : gl.NONE));
-        gl.clearBufferfv(gl.COLOR, this.n, new Float32Array([0, 0, 0, 0]));
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, msaaFBO.buff);
-        gl.drawBuffers(msaaFBO.attachments.map((_, i) => i == this.n ? gl.COLOR_ATTACHMENT0 + i : gl.NONE));
-        gl.clearBufferfv(gl.COLOR, this.n, new Float32Array([0, 0, 0, 0]));
+        gl.clearBufferiv(gl.COLOR, this.n, new Float32Array([0, 0, 0, 0]));
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
     after(gl: WebGL2RenderingContext, scene: Scene<Shape>) {
-        const {quad, uniformInfo} = this;
+        const {pick: quad, uniformInfo} = this;
         const {fbos: [fbo], vaos, setters, drawables} = scene;
         scene = new Scene(
             DUMMY_DRIVER,

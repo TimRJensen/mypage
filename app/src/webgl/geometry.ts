@@ -578,10 +578,10 @@ export class RootNode extends Composite {
     constructor(
         {id = 0, display = "fixed", pos = ORIGIN}: CompositeProps = shapePropsDefault,
     ) {
-        super({id, display, pos, shapes: [
-            new Root({display, pos: [0.0, 0.04, 0.0], pickColor: PICKED}),
+        super({display, pos, shapes: [
+            new Root({id, display, pos: [0.0, 0.04, 0.0], pickColor: PICKED}),
             new Circle({type: ShapeType.SHADOW, pos: [0.0, 0.01, 0.0], color: BLACK}),
-            new Circle({type: ShapeType.BACKGROUND, pos: [0.0, 0.07, 0.0],  rotation: [-Math.PI/2, 0.0, 0.0], scale: [1.1, 1.1, 1.1]}),
+            new Circle({id, type: ShapeType.BACKGROUND, pos: [0.0, 0.07, 0.0],  rotation: [-Math.PI/2, 0.0, 0.0], scale: [1.1, 1.1, 1.1]}),
         ],});
     }
 }
@@ -590,8 +590,8 @@ export class Node extends Composite {
     constructor(
         {id = 0, display = "fixed", pos = ORIGIN, shapes = []}: CompositeProps = shapePropsDefault,
     ) {
-        super({id, display, pos, shapes: [
-            new Sphere({display, pos: [0.0, 0.06, 0.0], pickColor: PICKED}),
+        super({display, pos, shapes: [
+            new Sphere({id, display, pos: [0.0, 0.06, 0.0], pickColor: PICKED}),
             new Circle({type: ShapeType.SHADOW, pos: [0.0, 0.01, 0.0], color: BLACK}),
             ...shapes,
         ],});
@@ -599,9 +599,9 @@ export class Node extends Composite {
 }
 
 export class Edge extends Composite {
-    constructor(start: Array<number>, end: Array<number>) {
+    constructor(start: Array<number>, end: Array<number>, id = 0) {
         super({pos: [-start[0], 0.0, -start[2]], shapes: [
-            new Line(start, end, 0.0015, {display: "hidden", pickColor: PICKED}),
+            new Line(start, end, 0.0015, {id, display: "hidden", pickColor: PICKED}),
             new Line([start[0]-0.0, 0.01, start[2]], [end[0], 0.005, end[2]-0.0], 0.001, {display: "hidden", type: ShapeType.SHADOW},),
         ],});
     }
@@ -615,8 +615,8 @@ export class Texture extends Composite {
         depth: number, 
         {id = 0, display = "hidden", pos = ORIGIN, rotation = [-Math.PI/2, 0.0, 0.0], scale = [1.2, 1.0, 1.0], shapes = []}: CompositeProps = compositePropsDefault,
     ) {
-        super({id, display, pos, shapes: [
-            new Plane(depth, {display, pos: [0.0, 0.1, 0.0], rotation, scale}),
+        super({display, pos, shapes: [
+            new Plane(depth, {id, display, pos: [0.0, 0.1, 0.0], rotation, scale}),
             new Circle({display, type: ShapeType.SHADOW, pos: [0.0, 0.0, 0.0], color: BLACK}),
             ...shapes,
         ],});
@@ -640,8 +640,8 @@ export class Text extends Composite {
         depth: number,
         {id = 0, display = "hidden", pos = ORIGIN, rotation = [Math.PI, 0.0, 0.0], scale = [2.5, 1.0, 1.5], shapes = []}: CompositeProps = shapePropsDefault
     ) {
-        super({id, display, pos, shapes: [
-            new Plane(depth, {display, rotation, scale}),
+        super({display, pos, shapes: [
+            new Plane(depth, {id, display, rotation, scale}),
             ...shapes,
         ],});
         this.texture = texture;

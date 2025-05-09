@@ -9,11 +9,9 @@ in vec3 v_view_pos;
 
 layout(location=0) out vec4 f_color;
 layout(location=1) out vec4 f_bloom;
-layout(location=2) out vec4 f_id;
 
 // Colored objects
 uniform int u_type;
-uniform int u_id;
 uniform int u_picked;
 uniform vec3 u_color;
 uniform vec3 u_light;
@@ -63,5 +61,4 @@ void main() {
 
     f_color = color;
     f_bloom = bloom;
-    f_id = vec4(float(u_id&0xFF)/255.0, float((u_id>>8)&0xFF)/255.0, 0.0, 0.0);
 }`;
