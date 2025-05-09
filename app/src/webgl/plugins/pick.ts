@@ -1,17 +1,10 @@
-import {Shape} from "../geometry.ts";
-import {
-    attachTextureBuffer,
-    createProgram,
-    initializeAtrtibutes,
-    initializeUniforms,
-    setUniform,
-    PluginLike,
-} from "../core.ts";
-import vs from "../shaders/vertex-pick.ts";
-import fs from "../shaders/fragment-pick.ts";
 import {UniformInfo, UniformSetter} from "../common.ts";
+import {attachTextureBuffer, createProgram, PluginLike, setUniform} from "../core.ts";
 import {Scene, SceneEvent} from "../scene-driver.ts";
 import {Event, EventQueue} from "../event-driver.ts";
+import {Shape} from "../geometry.ts";
+import vs from "../shaders/vertex-pick.ts";
+import fs from "../shaders/fragment-pick.ts";
 
 export class PickPluginEvent extends Event<Shape> {
     id: number;
@@ -20,7 +13,7 @@ export class PickPluginEvent extends Event<Shape> {
 
     constructor(
         type: string,
-        { id, shape, movementX, movementY }: {
+        {id, shape, movementX, movementY}: {
             id: number;
             shape: Shape;
             movementX: number;
@@ -43,13 +36,12 @@ function fence(gl: WebGL2RenderingContext, plugin: PickPlugin) {
             const status = gl.getSyncParameter(sync, gl.SYNC_STATUS);
 
             if (status == gl.SIGNALED) {
-                const data = new Int16Array(1);
+                const data = new Uint16Array(1);
                 gl.bindBuffer(gl.PIXEL_PACK_BUFFER, plugin.pbo);
                 gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, data);
                 gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
                 gl.deleteSync(sync);
                 plugin.fence = null;
-
                 resolve(data[0]);
             } else {
                 requestAnimationFrame(fn);
@@ -73,7 +65,7 @@ function handler(gl: WebGL2RenderingContext, scene: Scene<Shape>, plugin: PickPl
          * cy == (1 - ndcY)*0.5*height
          */
         const [fbo] = scene.fbos;
-        const rect = (gl.canvas as HTMLCanvasElement).getBoundingClientRect();
+        const rect = (<HTMLCanvasElement>gl.canvas).getBoundingClientRect();
         const ndcX = ((e.clientX - rect.left)/rect.width)*2 - 1;
         const ndcY = ((e.clientY - rect.top)/rect.height)*2 - 1;
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo.buff);
@@ -135,7 +127,7 @@ export class PickPlugin implements PluginLike<Shape> {
     readonly readType: GLenum = null!; 
     readonly pbo: WebGLBuffer = null!;
     public fence: Promise<void>|null = null;
-    protected quad: WebGLProgram = null!;
+    protected pick: WebGLProgram = null!;
     protected uniformInfo: Map<string, UniformInfo> = null!;
     protected setters:  Map<string, UniformSetter<Shape>> = null!;
 
@@ -149,19 +141,23 @@ export class PickPlugin implements PluginLike<Shape> {
         attachTextureBuffer(gl, mainFBO, gl.R16I, this.n);
 
         // Create the pick program
-        const [ok, quad] = createProgram(gl, vs, fs);
-        if (!ok) {
-            console.error("Pick Plugin: Failed to create program");
-            return;
-        }
-        this.quad = quad!;
-
-        // Initialize the attributes & uniforms
-        initializeAtrtibutes(gl, quad!, {
+        const [pick, _, uniformInfo] = createProgram(gl, vs, fs, {
             a_position: {type: gl.FLOAT, len: 3, stride: 24, size: 12},
             a_uv: {type: gl.FLOAT, len: 2, stride: 24, size: 12},
         });
-        this.uniformInfo = initializeUniforms(gl, quad!);
+        if (!pick) {
+            console.error("Pick Plugin: Failed to create program");
+            return;
+        }
+        this.pick = pick!;
+        this.uniformInfo = uniformInfo!;
+        
+        // Create a pixel buffer to read data asynchroniously
+        const pbo = gl.createBuffer();
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+        gl.bufferData(gl.PIXEL_PACK_BUFFER, 4, gl.STREAM_READ);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+        this.pbo = pbo;
 
         // Get device specific read format & type
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, mainFBO.buff);
@@ -169,13 +165,6 @@ export class PickPlugin implements PluginLike<Shape> {
         this.readFormat = gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_FORMAT);
         this.readType = gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_TYPE);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-        // Create a pixel buffer to read data asynchroniously
-        const pbo = gl.createBuffer();
-        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
-        gl.bufferData(gl.PIXEL_PACK_BUFFER, 2, gl.STREAM_READ);
-        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-        this.pbo = pbo;
 
         // Initialize events
         scene.setters.set("u_id", (shape) => shape.id);
@@ -185,10 +174,9 @@ export class PickPlugin implements PluginLike<Shape> {
         }
 
         // Swwitch events on scene switch
-        scene.on("switch", function (this: PickPlugin, e: SceneEvent<Shape>)  {
+        scene.on("switch", function (this: PickPlugin, e: SceneEvent<Shape>) {
             e.prev.setters.delete("u_id");
             e.next.setters.set("u_id", (shape) => shape.id);
-
             for (let i = 0; i < EVENTS.length; i++) {
                 gl.canvas.removeEventListener(EVENTS[i], fn);
             }
@@ -199,18 +187,18 @@ export class PickPlugin implements PluginLike<Shape> {
         }.bind(this));
     }
 
-    ready(): void {/**no-op */}
+    ready() {/**no-op */}
 
     before(gl: WebGL2RenderingContext, scene: Scene<Shape>) {
-        const [fbo] = scene.fbos;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
-        gl.drawBuffers(fbo.attachments.map((_, i) => i == this.n ? gl.COLOR_ATTACHMENT0 + i : gl.NONE));
-        gl.clearBufferiv(gl.COLOR, this.n, new Uint16Array([0, 0, 0, 0]));
+        const [mainFBO] = scene.fbos;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, mainFBO.buff);
+        gl.drawBuffers(mainFBO.attachments.map((_, i) => i == this.n ? gl.COLOR_ATTACHMENT0 + i : gl.NONE));
+        gl.clearBufferiv(gl.COLOR, this.n, new Float32Array([0, 0, 0, 0]));
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
     after(gl: WebGL2RenderingContext, scene: Scene<Shape>) {
-        const {quad, uniformInfo} = this;
+        const {pick: quad, uniformInfo} = this;
         const {fbos: [fbo], vaos, setters, drawables} = scene;
         scene = new Scene(
             DUMMY_DRIVER,
@@ -228,11 +216,17 @@ export class PickPlugin implements PluginLike<Shape> {
 
         // Static uniforms
         for (const [key, val] of setters.entries()) {
-            if (!uniformInfo.has(key) || val instanceof Function) {
+            if (!uniformInfo.has(key)) {
                 continue;
             }
-            setUniform(gl, uniformInfo.get(key)!, val);
+            switch (typeof val) {
+                case "number":
+                case "object":
+                    setUniform(gl, uniformInfo.get(key)!, val);
+                    break;
+            }
         }
+        
         // Draw
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
         gl.drawBuffers(fbo.attachments.map((_, i) => i == this.n ? gl.COLOR_ATTACHMENT0 + i : gl.NONE));

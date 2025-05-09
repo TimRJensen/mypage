@@ -1,7 +1,7 @@
 import {mat4, vec3} from "../linalg.ts";
 import {DrawableNode} from "./common.ts";
-import { setUniform } from "./core.ts";
-import { Scene } from "./scene-driver.ts";
+import {setUniform } from "./core.ts";
+import {Scene} from "./scene-driver.ts";
 
 const WHITE: [number, number, number] = [255, 255, 255];
 const BLACK: [number, number, number] = [0, 0, 0];
@@ -223,13 +223,17 @@ export class Shape implements DrawableNode<Shape> {
             return;
         }
 
-
         const {setters, uniformInfo} = scene;
         for (const [key, val] of setters.entries()) {
-            if (!uniformInfo.has(key) || !(val instanceof Function)) {
+            if (!uniformInfo.has(key)) {
                 continue;
-            }                
-            setUniform(gl, uniformInfo.get(key)!, val(this));
+            }
+            switch (typeof val) {
+                case "function":
+                    setUniform(gl, uniformInfo.get(key)!, val(this));
+                    break;
+            }
+
         }
 
         if (this.indices > 0) {
@@ -263,13 +267,16 @@ export class Test extends Shape {
     ) {
         const data = new Promise<ArrayBuffer>((resolve) => {
             const vertices =  new Float32Array([
-                // xyz     uv   normal
-                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-                 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
-                 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0
+                // xyz              uv      normal
+                -.5,-.5, -.5,       0.0,0.0, 0.0, 0.0, 0.0,
+                0.5,-.5, -.5,       0.0,0.0, 0.0, 0.0, 0.0,
+                0.0,0.4, -.5,       0.0,0.0, 0.0, 0.0, 0.0,
+            
+                -.5,0.5, 0.5,       1.0,0.0, 0.0, 0.0, 0.0,
+                0.5,0.5, 0.5,       1.0,0.0, 0.0, 0.0, 0.0,
+                0.0,-.4, 0.5,       1.0,0.0, 0.0, 0.0, 0.0,
             ]);
             const indicies = new Uint16Array([0, 1, 2]);
-
 
             const buff = new ArrayBuffer(4 + vertices.byteLength + indicies.byteLength);
             const view = new DataView(buff);
@@ -282,7 +289,7 @@ export class Test extends Shape {
             
             resolve(buff);
         });
-        super(DrawType.TRIANGLE_STRIP, props.id, props.type, data, props);
+        super(DrawType.TRIANGLES, props.id, props.type, data, props);
     }
 }
 
@@ -571,10 +578,10 @@ export class RootNode extends Composite {
     constructor(
         {id = 0, display = "fixed", pos = ORIGIN}: CompositeProps = shapePropsDefault,
     ) {
-        super({id, display, pos, shapes: [
-            new Root({display, pos: [0.0, 0.04, 0.0], pickColor: PICKED}),
+        super({display, pos, shapes: [
+            new Root({id, display, pos: [0.0, 0.04, 0.0], pickColor: PICKED}),
             new Circle({type: ShapeType.SHADOW, pos: [0.0, 0.01, 0.0], color: BLACK}),
-            new Circle({type: ShapeType.BACKGROUND, pos: [0.0, 0.07, 0.0],  rotation: [-Math.PI/2, 0.0, 0.0], scale: [1.1, 1.1, 1.1]}),
+            new Circle({id, type: ShapeType.BACKGROUND, pos: [0.0, 0.07, 0.0],  rotation: [-Math.PI/2, 0.0, 0.0], scale: [1.1, 1.1, 1.1]}),
         ],});
     }
 }
@@ -583,8 +590,8 @@ export class Node extends Composite {
     constructor(
         {id = 0, display = "fixed", pos = ORIGIN, shapes = []}: CompositeProps = shapePropsDefault,
     ) {
-        super({id, display, pos, shapes: [
-            new Sphere({display, pos: [0.0, 0.06, 0.0], pickColor: PICKED}),
+        super({display, pos, shapes: [
+            new Sphere({id, display, pos: [0.0, 0.06, 0.0], pickColor: PICKED}),
             new Circle({type: ShapeType.SHADOW, pos: [0.0, 0.01, 0.0], color: BLACK}),
             ...shapes,
         ],});
@@ -592,9 +599,9 @@ export class Node extends Composite {
 }
 
 export class Edge extends Composite {
-    constructor(start: Array<number>, end: Array<number>) {
+    constructor(start: Array<number>, end: Array<number>, id = 0) {
         super({pos: [-start[0], 0.0, -start[2]], shapes: [
-            new Line(start, end, 0.0015, {display: "hidden", pickColor: PICKED}),
+            new Line(start, end, 0.0015, {id, display: "hidden", pickColor: PICKED}),
             new Line([start[0]-0.0, 0.01, start[2]], [end[0], 0.005, end[2]-0.0], 0.001, {display: "hidden", type: ShapeType.SHADOW},),
         ],});
     }
@@ -608,8 +615,8 @@ export class Texture extends Composite {
         depth: number, 
         {id = 0, display = "hidden", pos = ORIGIN, rotation = [-Math.PI/2, 0.0, 0.0], scale = [1.2, 1.0, 1.0], shapes = []}: CompositeProps = compositePropsDefault,
     ) {
-        super({id, display, pos, shapes: [
-            new Plane(depth, {display, pos: [0.0, 0.1, 0.0], rotation, scale}),
+        super({display, pos, shapes: [
+            new Plane(depth, {id, display, pos: [0.0, 0.1, 0.0], rotation, scale}),
             new Circle({display, type: ShapeType.SHADOW, pos: [0.0, 0.0, 0.0], color: BLACK}),
             ...shapes,
         ],});
@@ -633,8 +640,8 @@ export class Text extends Composite {
         depth: number,
         {id = 0, display = "hidden", pos = ORIGIN, rotation = [Math.PI, 0.0, 0.0], scale = [2.5, 1.0, 1.5], shapes = []}: CompositeProps = shapePropsDefault
     ) {
-        super({id, display, pos, shapes: [
-            new Plane(depth, {display, rotation, scale}),
+        super({display, pos, shapes: [
+            new Plane(depth, {id, display, rotation, scale}),
             ...shapes,
         ],});
         this.texture = texture;

@@ -1,7 +1,7 @@
 export default `#version 300 es
 precision mediump float;
 
-in vec2 v_texcoord;
+in vec2 v_uv;
 out vec4 f_color;
 
 uniform sampler2D u_blur;
@@ -11,17 +11,17 @@ const float weight[5] = float[] (0.2270270270, 0.1945945946, 0.1216216216, 0.054
 
 void main() {
     vec2 texel = 1.0/vec2(textureSize(u_blur, 1));
-    vec3 result = texture(u_blur, v_texcoord).rgb*weight[0];
+    vec3 result = texture(u_blur, v_uv).rgb*weight[0];
 
     if (u_mode == 0) {
         for (int i = 1; i < 5; ++i) {
-            result += texture(u_blur, v_texcoord + vec2(texel.x*float(i), 0.0)).rgb*weight[i];
-            result += texture(u_blur, v_texcoord - vec2(texel.x*float(i), 0.0)).rgb*weight[i];
+            result += texture(u_blur, v_uv + vec2(texel.x*float(i), 0.0)).rgb*weight[i];
+            result += texture(u_blur, v_uv - vec2(texel.x*float(i), 0.0)).rgb*weight[i];
         }
     } else {
         for (int i = 1; i < 5; ++i) {
-            result += texture(u_blur, v_texcoord + vec2(0.0, texel.y*float(i))).rgb*weight[i];
-            result += texture(u_blur, v_texcoord - vec2(00., texel.y*float(i))).rgb*weight[i];
+            result += texture(u_blur, v_uv + vec2(0.0, texel.y*float(i))).rgb*weight[i];
+            result += texture(u_blur, v_uv - vec2(00., texel.y*float(i))).rgb*weight[i];
         }
     }
 

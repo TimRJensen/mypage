@@ -1,7 +1,7 @@
 export default `#version 300 es
-precision highp float;
-precision highp int;
-precision highp sampler2DArray;
+precision mediump int;
+precision mediump float;
+precision mediump sampler2DArray;
 
 in vec2 v_uv;
 in vec3 v_view_normal;
