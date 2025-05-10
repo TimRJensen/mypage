@@ -155,7 +155,7 @@ export class PickPlugin implements PluginLike<Shape> {
         // Create a pixel buffer to read data asynchroniously
         const pbo = gl.createBuffer();
         gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
-        gl.bufferData(gl.PIXEL_PACK_BUFFER, 2, gl.STREAM_READ);
+        gl.bufferData(gl.PIXEL_PACK_BUFFER, 4, gl.STREAM_READ);
         gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
         this.pbo = pbo;
 

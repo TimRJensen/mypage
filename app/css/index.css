@@ -10,7 +10,7 @@
 
 :root {
   font-family: 'Roboto', sans-serif;
-  font-size: clamp(12px, 100%, 18px);
+  font-size: clamp(12px, 100%, 14px);
 }
 
 button {
@@ -49,8 +49,8 @@ body {
 
 /* Custom styles */
 .button {
-  width: 24px;
-  height: 24px;
+  width: clamp(2rem, 100%, 3rem);
+  height: clamp(2rem, 100%, 3rem);
   border-radius: 50%;
   background-color: rgb(102, 51, 153);
 }
@@ -59,13 +59,12 @@ body {
   display: flex;
   flex-flow: column nowrap;
   align-items: center;
-  overflow: hidden;
 }
 
 /* Landing */
 #text-box {
   position: relative;
-  width: 100vw;
+  width: 375px;
   min-height: 100vh;
   align-content: center;
   text-align: center;
@@ -77,7 +76,7 @@ body {
   width: inherit;
   left: 50%;
   top: 50%;
-  padding: 0 25px;
+  padding: 0 1rem;
   font-size: 1.5rem;
   line-height: 2rem;
   transform: translate(-50%, -50%);
@@ -174,8 +173,23 @@ body {
   overflow: hidden;
 }
 
+#canvas-box::after {
+  content: "Please put your device in landscape mode 🙂";
+  align-content: center;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  color: #FFF;
+  font-size: 2rem;
+  text-align: center;
+  background-color: rebeccapurple;
+}
+
 #canvas-box:has(> .help-box[data-show='1'])::after {
-  content: '';
+  content: "";
+  display: unset;
   position: absolute;
   width: 100%;
   height: 100%;
@@ -235,15 +249,13 @@ body {
   padding: 0 20px;
   gap: 1rem;
   bottom: calc(100% - 3rem - 20px);
-  
 }
 
 #canvas-box .control-box .breadcrumbs {
   margin-right: auto;
-  font-size: 1.5rem;
-  line-height: 1.5rem;
   color: white;
   cursor: pointer;
+  font-size: 1.25rem;
 }
 
 #canvas-box .control-box .button {
@@ -263,14 +275,14 @@ body {
   justify-content: center;
   align-content: center;
   gap: 15px;
-  height: clamp(150px, 100%, 10rem);
+  height: 13.25rem;
   aspect-ratio: 3/4;
   border-radius: 1rem;
   border: solid 0.25rem #8547C2;
   padding: 20px 10px;
   background-color: rebeccapurple;
   color: #fff;
-  font-size: 0.5rem;
+  font-size: 10px;
   text-align: center;
   white-space: pre-wrap;
   overflow-wrap: break-word;
@@ -304,6 +316,7 @@ body {
   display: flex;
   flex-flow: row nowrap;
   justify-content: center;
+  font-size: 1rem;
   gap: 0.5rem;
 }
 
@@ -315,18 +328,14 @@ body {
 }
 
 #canvas-box .hint-box .rating > * {
-  width: 0.5rem;
-  height: 0.5rem;
-  border: solid 0.1rem #fff;
+  width: 10px;
+  height: 10px;
+  border: solid 0.25px #fff;
   border-radius: 50%;
 }
 
 #canvas-box .hint-box .rating > *[data-toggled='1'] {
   background-color: #fff;
-}
-
-#canvas-box .grid-text {
-  display: none;
 }
 
 /* Footer */
@@ -372,7 +381,7 @@ body {
   height: 100%;
   background-color: #fff;
   /* Dunno where that extra pixel below is comming from ¯\_(ツ)_/¯ */
-  clip-path: path('M 0,64 L 0,128 L 128,128 L 128,64 A 64 64 0 0 1 0 64');
+  clip-path: path('M 0,64 L 0,129 L 129,129 L 128,64 A 64 64 0 0 1 0 64');
   clip-rule: evenodd;
 }
 
@@ -439,5 +448,23 @@ body {
   }
   100% {
     opacity: 0;
+  }
+}
+
+@media screen and (min-width: 724px) {
+  :root{font-size: clamp(12px, 100%, 18px);}
+  #text-box{width: 30rem;}
+  #canvas-box .hint-box {height: 22.5rem; font-size: 1rem; font-size: 1rem;}
+  #canvas-box .hint-box .rating > * {width: 1.25rem; height: 1.25rem; border: solid 0.1rem #fff;}
+  #footer #contact-box > *:first-child {width: 256px; height: 256px;}
+  #footer #contact-box *:first-child::after {
+    clip-path: path('M 0,128 L 0,258 L 258,258 L 258,128 A 128 128 0 0 1 0 128');
+    clip-rule: evenodd;
+  }
+  #footer #contact-box > *:nth-child(3) svg {width: 36px; height: 36px;}
+}
+@media only screen and (orientation: landscape) {
+  #canvas-box::after {
+    display: none;
   }
 }

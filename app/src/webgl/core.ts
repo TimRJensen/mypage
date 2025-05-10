@@ -312,39 +312,41 @@ function loadTexture(gl: WebGL2RenderingContext, texInfo?: TextureInfo) {
     return Promise.all(promises);
 }
 
-function textureInternalFormat(type: GLenum) {
-    switch (type) {
-        case WebGL2RenderingContext.RGBA8:
-            return WebGL2RenderingContext.RGBA;
-    }
-    return 0;
-}
 //########################################################
 //# WebGL2 framebuffer specific
 //########################################################
+function textureInternalFormat(type: GLenum) {
+    switch (type) {
+        case WebGL2RenderingContext.RGBA8:
+            return [WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE];
+        case WebGL2RenderingContext.R16I:
+            return [WebGL2RenderingContext.RED_INTEGER, WebGL2RenderingContext.SHORT];
+
+    }
+    return [];
+}
 /**
  * Utility function to attach a texture to a framebuffer object.
  */
 export function attachTextureBuffer(
-    gl: WebGL2RenderingContext, fbo: FrameBufferObject, type: GLenum, n = 0,
+    gl: WebGL2RenderingContext, fbo: FrameBufferObject, format: GLenum, n = 0,
 ): Nullable<WebGLTexture> {
     const tex = gl.createTexture();
     if (!tex) {
         return null;
     }
-    const format = textureInternalFormat(type);
+    const [internalFormat, type] = textureInternalFormat(format);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
-    // gl.texImage2D(gl.TEXTURE_2D, 0, format, fbo.width, fbo.height, 0, format, gl.UNSIGNED_BYTE, null);
-    gl.texStorage2D(gl.TEXTURE_2D, 1, type, fbo.width, fbo.height);
+    gl.texImage2D(gl.TEXTURE_2D, 0, format, fbo.width, fbo.height, 0, internalFormat, type, null);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + n, gl.TEXTURE_2D, tex, 0);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    fbo.attachments.push({tex, type});
+    fbo.attachments.push({tex, format});
 
     return tex;
 }
@@ -373,27 +375,22 @@ export function attachDepthBuffer(gl: WebGL2RenderingContext, fbo: FrameBufferOb
  * Utility function to attach a MSAA texture to a framebuffer object.
  */
 export function attachMSAABuffer(
-    gl: WebGL2RenderingContext, fbo: FrameBufferObject, type: GLenum, n = 0, samples = 4,
+    gl: WebGL2RenderingContext, fbo: FrameBufferObject, format: GLenum, n = 0, samples = 4,
 ): Nullable<WebGLRenderbuffer> {
-    const rb = gl.createRenderbuffer();
-    if (!rb) {
+    const tex = gl.createRenderbuffer();
+    if (!tex) {
         return null
     };
     const maxSamples = Math.min(samples, gl.getParameter(gl.MAX_SAMPLES));
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
-    gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
-    gl.renderbufferStorageMultisample(gl.RENDERBUFFER, maxSamples, type, fbo.width, fbo.height);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + n, gl.RENDERBUFFER, rb);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, tex);
+    gl.renderbufferStorageMultisample(gl.RENDERBUFFER, maxSamples, format, fbo.width, fbo.height);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + n, gl.RENDERBUFFER, tex);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    fbo.attachments.push({tex, format});
 
-    if (n < fbo.attachments.length) {
-        fbo.attachments[n] = {tex: rb, type};
-    } else {
-        fbo.attachments.push({tex: rb, type});
-    }
-
-    return rb;
+    return tex;
 }
 
 /**
@@ -461,19 +458,21 @@ export function createMSAAFrameBufferObject(
 }
 
 export function resizeFrameBufferObject(
-    gl: WebGL2RenderingContext, fbo: FrameBufferObject, width: number, height: number, downscale = true,
+    gl: WebGL2RenderingContext, fbo: FrameBufferObject, width: number, height: number,
 ) {
     fbo.width = Math.trunc(width);
     fbo.height = Math.trunc(height);
 
     for (let i = 0; i < fbo.attachments.length; i++) {
-        const {tex, type} = fbo.attachments[i];
+        const {tex, format} = fbo.attachments[i];
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
         if (fbo.samples > 0) {
-            // gl.bindRenderbuffer(gl.RENDERBUFFER, tex);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, tex);
+            gl.renderbufferStorageMultisample(gl.RENDERBUFFER, fbo.samples, format, fbo.width, fbo.height);
         } else {
-            const format = textureInternalFormat(type);
+            const [internalFormat, type] = textureInternalFormat(format);
             gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texImage2D(gl.TEXTURE_2D, 0, format, fbo.width, fbo.height, 0, format, gl.UNSIGNED_BYTE, null);
+            gl.texImage2D(gl.TEXTURE_2D, 0, format, fbo.width, fbo.height, 0, internalFormat, type, null);
         }
     }
 
@@ -482,11 +481,12 @@ export function resizeFrameBufferObject(
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.buff);
-    // gl.deleteRenderbuffer(fbo.depth);
     if (fbo.samples > 0) {
-        // attachMSAADepthBuffer(gl, fbo, fbo.samples);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, fbo.depth);
+        gl.renderbufferStorageMultisample(gl.RENDERBUFFER, fbo.samples, gl.DEPTH_COMPONENT16, fbo.width, fbo.height);
     } else {
-        // attachDepthBuffer(gl, fbo);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, fbo.depth);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, fbo.width, fbo.height);
     }
 }
 
@@ -538,6 +538,51 @@ const sceneInfoDefault = {
 //########################################################
 //# Program specific
 //########################################################
+type RenderInfo = {
+    downsample: number | "adaptive";
+    fps: number | "adaptive";
+}
+
+function adaptiveDownsample(gl: WebGL2RenderingContext, downsample: number | "adaptive") {
+    const ext = gl.getExtension("WEBGL_debug_renderer_info")!;
+    const vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL);
+    console.log(vendor)
+    switch (typeof downsample) {
+        case "number":
+            return downsample;
+        default:
+            switch (true) {
+                case vendor.includes("NVIDIA"):
+                case vendor.includes("AMD"):
+                case vendor.includes("ARM"):
+                    return 2;
+
+            }
+    }
+    return 3;
+}
+
+function adaptiveFPSe(gl: WebGL2RenderingContext, fps: number | "adaptive") {
+    const ext = gl.getExtension("WEBGL_debug_renderer_info")!;
+    const vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL);
+
+    switch (typeof fps) {
+        case "number":
+            return fps;
+        default:
+            switch (true) {
+                case vendor.includes("NVIDIA"):
+                case vendor.includes("AMD"):
+                    return 60;
+                case vendor.includes("ARM"):
+                    return 30;
+
+            }
+    }
+    return 30;
+}
+
+
 const VERTICES = new Float32Array([
     // xy           uv
     -1,1,               0,1,
@@ -547,6 +592,7 @@ const VERTICES = new Float32Array([
 ]);
 
 export class Program<T extends Drawable<T>> {
+    protected canvas: HTMLCanvasElement = null!;
     protected gl: WebGL2RenderingContext = null!;
     protected programs: Array<WebGLProgram> = null!;
     protected quadVAO: WebGLVertexArrayObject = null!;
@@ -554,27 +600,20 @@ export class Program<T extends Drawable<T>> {
     protected fbos: Array<FrameBufferObject> = null!;
     protected sceneDriver: SceneDriver<T> = null!; 
     protected eventQueue: EventQueue<T, Event<T>> = null!;
-    protected plugins: Array<PluginLike<T>> = [];
+    protected renderInfo: RenderInfo = null!;
     protected rendering: boolean = false;
+    protected plugins: Array<PluginLike<T>> = [];
     protected rdy: Promise<Program<T>> = null!;
     protected time = 0;
-    protected fps = 60;
-    protected tex: WebGLTexture = null!
+    protected resizeRequest = 0;
 
     constructor(
-        readonly canvas: HTMLCanvasElement,
+        canvas: HTMLCanvasElement,
         vertexShader: string,
         fragmentShader: string,
-        attributes: AttributeInfo,
-        {
-            globals = {
-                fps: 60,
-                downsample: 2,
-                setters: {}, 
-                textures: <TextureInfo>{}
-            }, 
-            scenes = <Array<SceneObject<T>>>[]
-        }: SceneInfo<T> = sceneInfoDefault,
+        attributeInfo: AttributeInfo,
+        renderInfo: RenderInfo,
+        sceneInfo: SceneInfo<T> = sceneInfoDefault,
         plugins: Array<PluginLikeConstructor<T>> = [],
     ) {
         const gl = canvas.getContext("webgl2");
@@ -587,8 +626,8 @@ export class Program<T extends Drawable<T>> {
         // Initalize textures. Do this first as it is async.
         const promises: Array<Promise<unknown>> = [];
         const textures = new Map<string, Map<string, WebGLTexture|null>>();
-        if (globals.textures) {
-            promises.push(loadTexture(gl, globals.textures).then((res) => {
+        if (sceneInfo.globals?.textures) {
+            promises.push(loadTexture(gl, sceneInfo.globals.textures).then((res) => {
                 const map = new Map<string, WebGLTexture|null>();
                 for (const [key, tex] of <Array<[string, WebGLTexture]>>res) {
                     map.set((map.size/2).toString(), tex);
@@ -597,7 +636,7 @@ export class Program<T extends Drawable<T>> {
                 textures.set("globals", map);
             }));
         };
-        for (const scene of scenes) {
+        for (const scene of sceneInfo.scenes) {
             if (!scene.textures) {
                 continue;
             }
@@ -628,19 +667,19 @@ export class Program<T extends Drawable<T>> {
         }
         
         // Create the main program
-        const [main, mainAttrs, mainUniforms] = createProgram(gl, vertexShader, fragmentShader, attributes);
+        const [main, mainAttrs, mainUniforms] = createProgram(gl, vertexShader, fragmentShader, attributeInfo);
         if (!main) {
             return;
         }
         const setters = new Map<string, Map<string, UniformSetter<T>>>();
-        if (globals.setters) {
+        if (sceneInfo.globals?.setters) {
             const map = new Map<string, UniformSetter<T>>();
-            for (const [key, setter] of Object.entries(globals.setters)) {
+            for (const [key, setter] of Object.entries(sceneInfo.globals.setters)) {
                 map.set(key, setter);
             }
             setters.set("globals", map);
         }
-        for (const scene of scenes) {
+        for (const scene of sceneInfo.scenes) {
             if (!scene.setters) {
                 continue;
             }
@@ -654,7 +693,7 @@ export class Program<T extends Drawable<T>> {
         // Initialize object VAOs
         const vaos = new Map<string, Map<T, WebGLVertexArrayObject>>();
         const drawables = new Map<string, Array<T>>();
-        for (const scene of scenes) {
+        for (const scene of sceneInfo.scenes) {
             const map = new Map<T, WebGLVertexArrayObject>();
             for (const drawable of scene.drawables) {
                 promises.push(drawable.buffer.then((res) => {
@@ -672,40 +711,39 @@ export class Program<T extends Drawable<T>> {
         }
 
         // Initialize FBOs
-        // const msaaFBO = createMSAAFrameBufferObject(gl, canvas.width, canvas.height);
-        // const mainFBO = createFrameBufferObject(gl, canvas.width, canvas.height, gl.RGBA8, false);
-        // const outFBO = createFrameBufferObject(gl, canvas.width, canvas.height, gl.RGBA8, false);
-        // if (!msaaFBO || !mainFBO || !outFBO) {
-        //     return;
-        // }
+        const msaaFBO = createMSAAFrameBufferObject(gl, canvas.width, canvas.height);
+        const mainFBO = createFrameBufferObject(gl, canvas.width, canvas.height, gl.RGBA8, false);
+        const outFBO = createFrameBufferObject(gl, canvas.width, canvas.height, gl.RGBA8, false);
+        if (!msaaFBO || !mainFBO || !outFBO) {
+            return;
+        }
+
+        // Handle resize
+        const obs = new ResizeObserver(() => {
+            this.resizeRequest++;
+        });
+        obs.observe(canvas);
 
         // Wait for document to load
         promises.push(new Promise<void>((resolve) => {
             globalThis.addEventListener("load", () => resolve());
         }));
 
+        this.canvas = canvas;
         this.gl = gl;
         this.programs = [main, quad];
+        this.fbos = [mainFBO, msaaFBO, outFBO];
         this.quadVAO = quadVAO;
-        this.fps = globals.fps!;
+        this.renderInfo = renderInfo;
+        this.resizeRequest = 1;
         this.rdy = Promise.all(promises).then(() => {
-            const dpi = Math.min(devicePixelRatio || 1, 2);
-            const downsample = 1/globals.downsample!
-            const width = Math.max(canvas.clientWidth*dpi, canvas.clientHeight*dpi);
-            const height = Math.min(canvas.clientWidth*dpi, canvas.clientHeight*dpi);
-            gl.canvas.width = width;
-            gl.canvas.height = height;
-            const msaaFBO = createMSAAFrameBufferObject(gl, width*downsample, height*downsample);
-            const mainFBO = createFrameBufferObject(gl, width*downsample, height*downsample, gl.RGBA8, false);
-            const outFBO = createFrameBufferObject(gl, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA8, false);
-            if (!msaaFBO || !mainFBO || !outFBO) {
-                return this;
-            }
-            this.fbos = [mainFBO, msaaFBO, outFBO];
+            // Layout has been settled, so resize framebuffers.
+            this.resize();
 
+            // All assets has been loaded, so join global/local assets.
             if (textures.has("globals")) {
                 const entries = textures.get("globals")!;
-                for (const scene of scenes) {
+                for (const scene of sceneInfo.scenes) {
                     const map = textures.get(scene.name) ?? new Map();
                     for (const [k, v] of entries) {
                         map.set(k, v);
@@ -716,7 +754,7 @@ export class Program<T extends Drawable<T>> {
 
             if (setters.has("globals")) {
                 const entries = setters.get("globals")!;
-                for (const scene of scenes) {
+                for (const scene of sceneInfo.scenes) {
                     const map = setters.get(scene.name) ?? new Map();
                     for (const [k, v] of entries) {
                         map.set(k, v);
@@ -725,8 +763,9 @@ export class Program<T extends Drawable<T>> {
                 }
             }
 
+            // Initialize scenedriver.
             const map = new Map<string, Scene<T>>();
-            for (const scene of scenes) {
+            for (const scene of sceneInfo.scenes) {
                 const {name, color} = scene;
                 map.set(scene.name, new Scene<T>(
                     this.eventQueue,
@@ -736,11 +775,12 @@ export class Program<T extends Drawable<T>> {
                     textures.get(name)!,
                     setters.get(name)!,
                     mainUniforms!,
-                    color ?? globals?.color
+                    color ?? sceneInfo.globals?.color
                 ));
             }
-            this.sceneDriver = new SceneDriver<T>(map, scenes[0].name);
+            this.sceneDriver = new SceneDriver<T>(map, sceneInfo.scenes[0].name);
 
+            // Initiliazie plugins.
             for (const Plugin of plugins) {
                 this.plugins.push(new Plugin(gl, this.sceneDriver.scene()));
             }
@@ -749,14 +789,33 @@ export class Program<T extends Drawable<T>> {
         });
     }
 
+    protected resize() {
+        const {canvas, gl, fbos: [mainFBO, msaaFBO, outFBO], renderInfo} = this;
+        const dpi = Math.min(devicePixelRatio || 1, 2);
+        const downsample = 1/adaptiveDownsample(gl, renderInfo.downsample)!
+        const width = Math.max(canvas.clientWidth*dpi, canvas.clientHeight*dpi);
+        const height = Math.min(canvas.clientWidth*dpi, canvas.clientHeight*dpi);
+        gl.canvas.width = width;
+        gl.canvas.height = height;
+        resizeFrameBufferObject(gl, msaaFBO!, width*downsample, height*downsample);
+        resizeFrameBufferObject(gl, mainFBO!, width*downsample, height*downsample);
+        resizeFrameBufferObject(gl, outFBO!, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    }
+
     protected draw(time: number) {
-        if (time - this.time < 1000/this.fps) {
+        const {gl, renderInfo} = this;
+
+        if (time - this.time < 1000/adaptiveFPSe(gl, renderInfo.fps)) {
             requestAnimationFrame(this.draw);
             return;
         }
         this.time = time;
+
+        if (this.resizeRequest) {
+            this.resize();
+            this.resizeRequest = 0;
+        }
         
-        const {gl} = this;
         const [mainFBO, msaaFBO, outFBO] = this.fbos;
         const scene = this.sceneDriver.scene();
         const {vaos, drawables, color} = scene;
@@ -889,9 +948,9 @@ export class Program<T extends Drawable<T>> {
             return;
         }
         this.rendering = true;
-        this.rdy.then(() => {
+        return this.rdy.then(() => {
             this.draw = this.draw.bind(this);
-            this.draw(0);
+            requestAnimationFrame(this.draw);
             return this;
         });
     }

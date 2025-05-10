@@ -16,7 +16,7 @@ import hints from "./hints.ts";
         return;
     }
 
-    const ws = new WebSocket("ws://192.168.0.108:4242");
+    const ws = new WebSocket("ws://192.168.0.107:4242");
     ws.onmessage = (msg) => {
         if (msg.data === "reload") {
             location.reload();
@@ -122,7 +122,6 @@ import hints from "./hints.ts";
         new Node({id: 0x3, pos: [0.4952, 0.0, -0.4583], shapes: [
             new Text(1, 13, {pos: [-0.05, 0.0025, -0.05], rotation: [Math.PI, Math.PI/4, 0.0]}),
             new Edge([0.4952, 0.07, -0.4583], [0.024, 0.06, -0.7092], 0x3),
-            new Texture(2, 1, {id: 0x302, pos: [0.5571, 0.0, 0.3095], rotation: [-Math.PI/2, 0.0, 0.75]}),
             new Texture(2, 2, {id: 0x301, pos: [0.2747, 0.0, 0.1500], rotation: [-Math.PI/2, 0.0, 0.5]}),
             new Texture(2, 0, {id: 0x300, pos: [0.3885, 0.0, 0.0], rotation: [-Math.PI/2, 0.0, 0.5]}),
         ]}),
@@ -188,7 +187,7 @@ import hints from "./hints.ts";
 
     // Viewprojection matrix
     const canvas = document.querySelector<HTMLCanvasElement>("#canvas-box #canvas")!;
-    const pm = mat4.perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 3.5);
+    const pm = mat4.perspective(Math.PI/4, 16/9, 0.1, 3.5);
     const cam = new vec3(0.2, 0.4, -1.45);
     const center = new vec3(0, 0, 0);
     const up = new vec3(0, 1, 0);
@@ -200,9 +199,11 @@ import hints from "./hints.ts";
         a_uv: {type: WebGL2RenderingContext.FLOAT, len: 2, stride: 32, size: 4},
         a_normal: {type: WebGL2RenderingContext.FLOAT, len: 3, stride: 32, size: 4},
     }, {
+        fps: "adaptive",
+        downsample: "adaptive"
+    },
+    {
         globals: {
-            fps: 60,
-            downsample: 2,
             color: [102, 51, 153],
             textures: {
                 "/static/imgs/atlas-logos.png": {
@@ -258,7 +259,8 @@ import hints from "./hints.ts";
     }, [
         BloomPlugin,
         PickPlugin,
-    ]).ready();
+    ])
+        .ready();
     program.render();
 
     // Handle drag
@@ -425,7 +427,7 @@ import hints from "./hints.ts";
                 if (Math.hypot(e.shape.world.x - cam.x, e.shape.world.z - cam.z) < 0.3714) {
                     return;
                 };
-                e.shape = (map.get(e.id >> 4) ?? map.get(e.id >> 8))!.shape;
+                // e.shape = (map.get(e.id >> 4) ?? map.get(e.id >> 8))!.shape;
                 break;
         }
 
@@ -701,12 +703,20 @@ import hints from "./hints.ts";
             return;
         }
 
-        helpButton.dispatchEvent(new PointerEvent("pointerdown", {}));
+        requestAnimationFrame(function fn() {
+            if (globalThis.matchMedia("(orientation: landscape)").matches) {
+                helpStarted = 1;
+                program.switch("guide");
+            } else {
+                requestAnimationFrame(fn);
+            }
+        });
+        
         obs.disconnect();
     }, {
         threshold: 0.25,
     });
-    // obs.observe(canvas);
+    obs.observe(canvas);
 
     // Handle cloud
     const cloudStates = [0, 1, 2, 3, 4, 5, 6];

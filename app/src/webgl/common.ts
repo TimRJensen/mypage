@@ -54,7 +54,7 @@ export interface DrawableNode<T> extends Drawable<T> {
 }
 
 type Attachment = {
-    type: GLenum;
+    format: GLenum;
     tex: WebGLTexture | null;
 }
 
