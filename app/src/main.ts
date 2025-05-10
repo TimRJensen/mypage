@@ -22,7 +22,7 @@ import hints from "./hints.ts";
             location.reload();
         }
     };
-})(true);
+})(false);
 
 /**
  * Handle text
