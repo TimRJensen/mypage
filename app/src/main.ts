@@ -22,7 +22,7 @@ import hints from "./hints.ts";
             location.reload();
         }
     };
-})(false);
+})(true);
 
 /**
  * Handle text
@@ -191,11 +191,11 @@ import hints from "./hints.ts";
     const cam = new vec3(0.2, 0.4, -1.45);
     const center = new vec3(0, 0, 0);
     const up = new vec3(0, 1, 0);
-    let view = mat4.lookAt(cam, center, up);
+    const view = mat4.lookAt(cam, center, up);
     
     // Create the WebGL program.
     const canvas = document.querySelector<HTMLCanvasElement>("#canvas-box #canvas")!;
-    const program = new Program(canvas, vs, fs, {
+    const program = await new Program(canvas, vs, fs, {
         a_position: {type: WebGL2RenderingContext.FLOAT, len: 3, stride: 32, size: 4},
         a_uv: {type: WebGL2RenderingContext.FLOAT, len: 2, stride: 32, size: 4},
         a_normal: {type: WebGL2RenderingContext.FLOAT, len: 3, stride: 32, size: 4},
@@ -225,8 +225,8 @@ import hints from "./hints.ts";
                 },
             },
             setters: {
-                u_project: () => pm,
-                u_view: () => view,
+                u_project: pm,
+                u_view: view,
                 u_view_normal: () => view.mat3().inverse().transpose(),
                 u_light: new vec3(0.0, -0.75, 1.45),
             }
@@ -238,7 +238,6 @@ import hints from "./hints.ts";
                 setters: {
                     u_world: (shape) => shape.world,
                     u_type: (shape) => shape.type,
-                    u_id: (shape) => shape.id,
                     u_picked: (shape) => picked.some((id) => id == shape.id) ? 1 : 0,
                     u_color: (shape) => picked.some((id) => id == shape.id) ? shape.pickColor : shape.color,
                     u_depth: (shape) => shape.id == CLOUD ? cloudState : shape.depth,
@@ -250,7 +249,6 @@ import hints from "./hints.ts";
                 setters: {
                     u_world: (shape) => shape.world,
                     u_type: (shape) => shape.type,
-                    u_id: (shape) => shape.id,
                     u_picked: (shape) => picked.some((id) => id == shape.id) ? 1 : 0,
                     u_color: (shape) => picked.some((id) => id == shape.id) ? shape.pickColor : shape.color,
                     u_depth: (shape) => shape.id == CLOUD ? cloudState : shape.depth,
@@ -260,12 +258,11 @@ import hints from "./hints.ts";
     }, [
         BloomPlugin,
         PickPlugin,
-    ]);
-    await program.ready();
+    ]).ready();
+    program.render();
 
     // Handle drag
     const bounds = [[1.5, -1.5], [0.5, -1.75]];
-    let panning = 0;
     let pointer = -1;
     canvas.addEventListener("pointermove", (e) => {
         if (pointer == -1) {
@@ -283,8 +280,8 @@ import hints from "./hints.ts";
             center.z += dz;
         }
 
-        view = mat4.lookAt(cam, center, up);
-    }, {passive: false});
+        view.set(mat4.lookAt(cam, center, up));
+    }, {/*passive: false*/});
     canvas.addEventListener("pointerup", () => {
         if (pointer == -1) {
             return;
@@ -292,20 +289,18 @@ import hints from "./hints.ts";
 
         canvas.releasePointerCapture(pointer);
         pointer = -1;
-    }, {passive: false});
+    }, /*{passive: false}*/);
     canvas.addEventListener("pointerdown", (e) => {
-        if (panning == 1) {
+        if (progress != 0) {
             return;
         }
 
         canvas.setPointerCapture(e.pointerId);
         pointer = e.pointerId;
-    }, {passive: false});
+    }, {/*passive: false*/});
 
     // Handle pick (click)
     // picked[0] == root, picked[1 && 2] == hovered, picked[3 && 4] == focused
-    const srcXZ = [0, 0];
-    const trgXZ = [0, 0];
     const duration = 500;
     const step = 1/(duration/(1000/60));
     const offset = [0.125, -0.6589];
@@ -317,23 +312,24 @@ import hints from "./hints.ts";
     function lerp(a: number, b: number, alpha: number): number {
         return a*(1 - alpha) + b*alpha;
     }
-    function panCamera() {
-        if (progress >= 1.0) {
-            progress = panning = 0;
-            return;
-        }
-        panning = 1;
-        progress += step;
-
-        const alpha = easeInOut(progress);
-        const offsetXZ = [center.x - cam.x, center.z - cam.z];
-        cam.x = lerp(srcXZ[0], trgXZ[0], alpha);
-        cam.z = lerp(srcXZ[1], trgXZ[1], alpha);
-        center.x = cam.x + offsetXZ[0];
-        center.z = cam.z + offsetXZ[1];
-        view = mat4.lookAt(cam, center, up);
-
-        requestAnimationFrame(panCamera);
+    function panCamera(srcX: number, srcZ: number, trgX: number, trgZ: number) {
+        requestAnimationFrame(function fn() {
+            if (progress >= 1.0) {
+                progress = 0;
+                return;
+            }
+            progress += step;
+    
+            const alpha = easeInOut(progress);
+            const offsetXZ = [center.x - cam.x, center.z - cam.z];
+            cam.x = lerp(srcX, trgX, alpha);
+            cam.z = lerp(srcZ, trgZ, alpha);
+            center.x = cam.x + offsetXZ[0];
+            center.z = cam.z + offsetXZ[1];
+            view.set(mat4.lookAt(cam, center, up));
+    
+            requestAnimationFrame(fn);
+        });
     }
 
     const infoBox = document.querySelector<HTMLDivElement>("#canvas-box .hint-box")!;
@@ -344,7 +340,7 @@ import hints from "./hints.ts";
         }
 
         requestAnimationFrame(function fn() {
-            if (!progress || progress >= 1.0) {
+            if (progress >= 1.0) {
                 return;
             }
 
@@ -433,11 +429,7 @@ import hints from "./hints.ts";
                 break;
         }
 
-        srcXZ[0] = cam.x;
-        srcXZ[1] = cam.z;
-        trgXZ[0] = e.shape.world.x + offset[0];
-        trgXZ[1] = e.shape.world.z + offset[1];
-        panCamera();
+        panCamera(cam.x, cam.z, e.shape.world.x + offset[0], e.shape.world.z + offset[1]);
     });
 
     // Handle pick (hover)
@@ -520,11 +512,8 @@ import hints from "./hints.ts";
                 break;
         }
 
-        srcXZ[0] = cam.x;
-        srcXZ[1] = cam.z;
-        trgXZ[0] = map.get(id)!.shape.world.x + offset[0];
-        trgXZ[1] = map.get(id)!.shape.world.z + offset[1];
-        panCamera();
+        const shape = map.get(id)!.shape;
+        panCamera(cam.x, cam.z, shape.world.x + offset[0], shape.world.z + offset[1]);
     });
 
     program.on("done", () => {
@@ -572,11 +561,9 @@ import hints from "./hints.ts";
             shape.blur();
             shape.hide();
         }
-        srcXZ[0] = cam.x;
-        srcXZ[1] = cam.z;
-        trgXZ[0] = map.get(HELP)!.shape.world.x + offset[0];
-        trgXZ[1] = map.get(HELP)!.shape.world.z + offset[1];
-        panCamera();
+
+        const shape = map.get(HELP)!.shape;
+        panCamera(cam.x, cam.z, shape.world.x + offset[0], shape.world.z + offset[1]);
     });
 
     const helpButton = document.querySelector<HTMLDivElement>("#canvas-box .control-box #help")!;
@@ -675,11 +662,7 @@ import hints from "./hints.ts";
                 map.get(HELP)!.shape.focus();
                 map.get(FIRST)!.shape.focus();
 
-                srcXZ[0] = cam.x;
-                srcXZ[1] = cam.z;
-                trgXZ[0] = shape.world.x + offset[0];
-                trgXZ[1] = shape.world.z + offset[1];
-                panCamera();
+                panCamera(cam.x, cam.z, shape.world.x + offset[0], shape.world.z + offset[1]);
                 break;
             case 5:
                 shape.display = "none";
@@ -723,69 +706,58 @@ import hints from "./hints.ts";
     }, {
         threshold: 0.25,
     });
-    obs.observe(canvas);
+    // obs.observe(canvas);
 
     // Handle cloud
     const cloudStates = [0, 1, 2, 3, 4, 5, 6];
     let cloudState = cloudStates[0];
     let cloudDrag = false;
     let cloudTrigger = 0;
-    let cloudTimer = 0;
     program.on("pointerdown", (e: PickPluginEvent) => {
-        // e.preventDefault();
-
         if (e.id != CLOUD || cloudState != 0) {
             return;
         }
 
         const rnd = Math.random();
-        let newState = 0;
         switch (true) {
             case rnd < 0.1:
             case cloudTrigger == 9:
-                newState = cloudStates[5];
+                cloudState = cloudStates[5];
                 cloudTrigger = 0;
                 break;
             case rnd < 0.325:
-                newState = cloudStates[1];
+                cloudState = cloudStates[1];
                 break;
             case rnd < 0.55:
-                newState = cloudStates[2];
+                cloudState = cloudStates[2];
                 break;
             case rnd < 0.775:
-                newState = cloudStates[3];
+                cloudState = cloudStates[3];
                 break;
             case rnd < 1:
-                newState = cloudStates[4];
+                cloudState = cloudStates[4];
                 break;
         }
 
         pointer = -1;
         cloudDrag = true;
         cloudTrigger++;
-        cloudTimer = setTimeout(() => cloudState = 0, 300);
-        requestAnimationFrame(() => {
-            if (cloudState != 6) {
-                cloudState = newState;
-            }
-        });
     });
 
-    program.on("pointerup", (e) => {
-        // e.preventDefault();
+    program.on("pointerup", () => {
         if (cloudState == cloudStates[6]) {
             cloudState = cloudStates[0];
+            console.log("foo")
+        } else {
+            setTimeout(() => cloudState = 0, 300);
         }
         cloudDrag = false;
-        console.log("foo")
     });
 
     program.on("pointermove", (e: PickPluginEvent) => {
-        // e.preventDefault();
         if (!cloudDrag) {
             return;
         }
-        clearInterval(cloudTimer);
         cloudState = cloudStates[6];
 
         const dx = e.movementX/canvas.width;

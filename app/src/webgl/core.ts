@@ -222,8 +222,6 @@ export function createTextureArrayBuffer(
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, tex);
     gl.texStorage3D(gl.TEXTURE_2D_ARRAY, size, gl.RGBA8, info.width, info.height, info.depth);
 
-    const ext = gl.getExtension("EXT_texture_filter_anisotropic")!;
-    gl.texParameterf(gl.TEXTURE_2D_ARRAY, ext.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(4, gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -558,7 +556,7 @@ export class Program<T extends Drawable<T>> {
     protected eventQueue: EventQueue<T, Event<T>> = null!;
     protected plugins: Array<PluginLike<T>> = [];
     protected rendering: boolean = false;
-    protected rdy: Promise<unknown> = null!;
+    protected rdy: Promise<Program<T>> = null!;
     protected time = 0;
     protected fps = 60;
     protected tex: WebGLTexture = null!
@@ -701,7 +699,7 @@ export class Program<T extends Drawable<T>> {
             const mainFBO = createFrameBufferObject(gl, width*downsample, height*downsample, gl.RGBA8, false);
             const outFBO = createFrameBufferObject(gl, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA8, false);
             if (!msaaFBO || !mainFBO || !outFBO) {
-                return;
+                return this;
             }
             this.fbos = [mainFBO, msaaFBO, outFBO];
 
@@ -746,6 +744,8 @@ export class Program<T extends Drawable<T>> {
             for (const Plugin of plugins) {
                 this.plugins.push(new Plugin(gl, this.sceneDriver.scene()));
             }
+
+            return this;
         });
     }
 
@@ -824,14 +824,6 @@ export class Program<T extends Drawable<T>> {
             drawBuffers[i] = gl.NONE;
         }
 
-        // gl.useProgram(this.programs[1]);
-        // gl.activeTexture(gl.TEXTURE0);
-
-        // gl.bindTexture(gl.TEXTURE_2D, mainFBO.attachments[2].tex);
-        // gl.bindVertexArray(this.quadVAO);
-        // gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        // return
-
         // Consume plugins (after)
         for (const plugin of this.plugins) {
             plugin.after(gl, scene);
@@ -900,6 +892,7 @@ export class Program<T extends Drawable<T>> {
         this.rdy.then(() => {
             this.draw = this.draw.bind(this);
             this.draw(0);
+            return this;
         });
     }
 

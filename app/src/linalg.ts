@@ -241,6 +241,13 @@ export class mat4 extends Float32Array {
         return res;
     }
 
+    override set(other: mat4): void {
+        this[0] = other[0], this[1] = other[1], this[2] = other[2], this[3] = other[3];
+        this[4] = other[4], this[5] = other[5], this[6] = other[6], this[7] = other[7];
+        this[8] = other[8], this[9] = other[9], this[10] = other[10], this[11] = other[11];
+        this[12] = other[12], this[13] = other[13], this[14] = other[14], this[15] = other[15];
+    }
+
     mul(other: mat4) {
         const res = new mat4();
         res[0] = this[0]*other[0] + this[4]*other[1] + this[8]*other[2] + this[12]*other[3];

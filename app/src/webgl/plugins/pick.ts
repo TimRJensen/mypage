@@ -155,7 +155,7 @@ export class PickPlugin implements PluginLike<Shape> {
         // Create a pixel buffer to read data asynchroniously
         const pbo = gl.createBuffer();
         gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
-        gl.bufferData(gl.PIXEL_PACK_BUFFER, 4, gl.STREAM_READ);
+        gl.bufferData(gl.PIXEL_PACK_BUFFER, 2, gl.STREAM_READ);
         gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
         this.pbo = pbo;
 
@@ -175,14 +175,14 @@ export class PickPlugin implements PluginLike<Shape> {
 
         // Swwitch events on scene switch
         scene.on("switch", function (this: PickPlugin, e: SceneEvent<Shape>) {
+            e.next.setters.set("u_id", e.prev.setters.get("u_id")!);
             e.prev.setters.delete("u_id");
-            e.next.setters.set("u_id", (shape) => shape.id);
-            for (let i = 0; i < EVENTS.length; i++) {
-                gl.canvas.removeEventListener(EVENTS[i], fn);
+            for (const event of EVENTS) {
+                gl.canvas.removeEventListener(event, fn);
             }
             fn = <EventListener>handler(gl, e.next, this);
-            for (let i = 0; i < EVENTS.length; i++) {
-                gl.canvas.addEventListener(EVENTS[i], fn);
+            for (const event of EVENTS) {
+                gl.canvas.addEventListener(event, fn);
              }
         }.bind(this));
     }

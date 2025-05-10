@@ -97,6 +97,7 @@ export class Shape implements DrawableNode<Shape> {
     public readonly buffer: Promise<[Float32Array, Uint16Array]> = null!;
     public readonly indices = 0;
     public readonly vertices = 0;
+    public readonly id;
     public readonly world;
     public readonly color;
     public readonly pickColor;
@@ -107,7 +108,6 @@ export class Shape implements DrawableNode<Shape> {
     public focused = 0;
     protected _parent: Shape|null = null;
     protected _idx: number = -1;
-    protected _id = 0;
     protected children: Array<Shape> = [];
 
     constructor(
@@ -146,19 +146,12 @@ export class Shape implements DrawableNode<Shape> {
             0, 0, 1, 0,
             pos[0], pos[1], pos[2], 1,
         ]);
+        this.id = id;
+        this.depth = 0;
         this.color = new Float32Array(color);
         this.pickColor = new Float32Array(pick_color);
-        this.depth = 0;
         this.display = display;
         this.visible = display == "hidden" ? 0 : 1;
-        this._id = id;
-    }
-
-    get id (): number {
-        if (this._id != 0) {
-            return this._id;
-        }
-        return this.parent()?.id ?? 0;
     }
 
     *[Symbol.iterator]() {
@@ -437,18 +430,17 @@ const compositePropsDefault: CompositeProps = {
 };
 
 export class Composite extends Shape {
-     public override readonly buffer;
-     public override readonly world;
+    public override readonly buffer;
 
     constructor(
         {
             id = 0, type = ShapeType.COLORED, display = "inherit",
             pos = ORIGIN,
-            color = WHITE, pickColor: pick_color = WHITE, 
+            color = WHITE, pickColor = WHITE, 
             shapes = [],
         }: CompositeProps = compositePropsDefault,
     ) {
-        super(DrawType.TRIANGLES, type, id, null, {color, pickColor: pick_color, display});
+        super(DrawType.TRIANGLES, type, id, null, {pos, color, pickColor, display});
 
         let key = "";
         for (const shape of shapes) {
@@ -487,7 +479,6 @@ export class Composite extends Shape {
                     return [vAll, iAll];
                 }),
             );
-            CACHE.set(Composite.constructor.name, CACHE.get(key)!);
         }
 
         this.buffer = CACHE.get(key)!.then<[Float32Array, Uint16Array]>((res) => {
@@ -504,16 +495,6 @@ export class Composite extends Shape {
                 child.world[14] += pos[2];
             }
         }
-
-        this.world = new mat4([
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            pos[0], pos[1], pos[2], 1,
-        ]);
-        this.display = display;
-        this.visible = display == "hidden" ? 0 : 1;
-        this._id = id;
     }
 
     override *[Symbol.iterator](): Generator<this> {
