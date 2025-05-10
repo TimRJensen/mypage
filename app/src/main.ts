@@ -16,7 +16,7 @@ import hints from "./hints.ts";
         return;
     }
 
-    const ws = new WebSocket("ws://192.168.0.107:4242");
+    const ws = new WebSocket("ws://192.168.0.108:4242");
     ws.onmessage = (msg) => {
         if (msg.data === "reload") {
             location.reload();
@@ -187,14 +187,14 @@ import hints from "./hints.ts";
     const picked = [-1, -1, -1, -1, -1];
 
     // Viewprojection matrix
-    const pm = mat4.perspective(Math.PI/4, 16/9, 0.1, 3.5);
+    const canvas = document.querySelector<HTMLCanvasElement>("#canvas-box #canvas")!;
+    const pm = mat4.perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 3.5);
     const cam = new vec3(0.2, 0.4, -1.45);
     const center = new vec3(0, 0, 0);
     const up = new vec3(0, 1, 0);
     const view = mat4.lookAt(cam, center, up);
     
     // Create the WebGL program.
-    const canvas = document.querySelector<HTMLCanvasElement>("#canvas-box #canvas")!;
     const program = await new Program(canvas, vs, fs, {
         a_position: {type: WebGL2RenderingContext.FLOAT, len: 3, stride: 32, size: 4},
         a_uv: {type: WebGL2RenderingContext.FLOAT, len: 2, stride: 32, size: 4},
@@ -281,7 +281,7 @@ import hints from "./hints.ts";
         }
 
         view.set(mat4.lookAt(cam, center, up));
-    }, {/*passive: false*/});
+    }, {passive: false});
     canvas.addEventListener("pointerup", () => {
         if (pointer == -1) {
             return;
@@ -289,7 +289,7 @@ import hints from "./hints.ts";
 
         canvas.releasePointerCapture(pointer);
         pointer = -1;
-    }, /*{passive: false}*/);
+    }, {passive: false});
     canvas.addEventListener("pointerdown", (e) => {
         if (progress != 0) {
             return;
@@ -297,13 +297,13 @@ import hints from "./hints.ts";
 
         canvas.setPointerCapture(e.pointerId);
         pointer = e.pointerId;
-    }, {/*passive: false*/});
+    }, {passive: false});
 
     // Handle pick (click)
     // picked[0] == root, picked[1 && 2] == hovered, picked[3 && 4] == focused
     const duration = 500;
     const step = 1/(duration/(1000/60));
-    const offset = [0.125, -0.6589];
+    const offset = [0.2, -0.8];
     let progress = 0;
 
     function easeInOut(alpha: number) {

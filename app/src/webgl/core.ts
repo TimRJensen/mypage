@@ -691,8 +691,8 @@ export class Program<T extends Drawable<T>> {
         this.rdy = Promise.all(promises).then(() => {
             const dpi = Math.min(devicePixelRatio || 1, 2);
             const downsample = 1/globals.downsample!
-            const width = canvas.clientWidth*dpi;
-            const height = canvas.clientHeight*dpi;
+            const width = Math.max(canvas.clientWidth*dpi, canvas.clientHeight*dpi);
+            const height = Math.min(canvas.clientWidth*dpi, canvas.clientHeight*dpi);
             gl.canvas.width = width;
             gl.canvas.height = height;
             const msaaFBO = createMSAAFrameBufferObject(gl, width*downsample, height*downsample);

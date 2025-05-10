@@ -10,7 +10,7 @@
 
 :root {
   font-family: 'Roboto', sans-serif;
-  font-size: clamp(12px, 2vmin, 18px);
+  font-size: clamp(12px, 100%, 18px);
 }
 
 button {
@@ -49,8 +49,8 @@ body {
 
 /* Custom styles */
 .button {
-  width: 3rem;
-  height: 3rem;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background-color: rgb(102, 51, 153);
 }
@@ -168,8 +168,8 @@ body {
 /* Canvas */
 #canvas-box {
   position: relative;
-  width: 100vmax;
-  height: 100vmin;
+  width: 100vw;
+  height: 100vh;
   perspective-origin: -150%;
   overflow: hidden;
 }
@@ -219,8 +219,8 @@ body {
 }
 
 #canvas-box #canvas {
-  width: 100vmax;
-  height: 100vmin;
+  width: 100%;
+  height: 100%;
   background-color: orange;
   touch-action: none;
 }
@@ -263,13 +263,14 @@ body {
   justify-content: center;
   align-content: center;
   gap: 15px;
-  height: clamp(200px, 100%, 18.5rem);
+  height: clamp(150px, 100%, 10rem);
   aspect-ratio: 3/4;
-  border-radius: 25px;
-  border: solid calc(1rem * 0.25) #8547C2;
+  border-radius: 1rem;
+  border: solid 0.25rem #8547C2;
   padding: 20px 10px;
   background-color: rebeccapurple;
   color: #fff;
+  font-size: 0.5rem;
   text-align: center;
   white-space: pre-wrap;
   overflow-wrap: break-word;
@@ -314,9 +315,9 @@ body {
 }
 
 #canvas-box .hint-box .rating > * {
-  width: 1.5rem;
-  height: 1.5rem;
-  border: solid 2.5px #fff;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: solid 0.1rem #fff;
   border-radius: 50%;
 }
 
@@ -340,10 +341,6 @@ body {
 }
 
 #footer #return {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  background-color: rebeccapurple;
   z-index: 100;
 }
 
@@ -362,8 +359,8 @@ body {
   justify-content: center;
   align-items: flex-end;
   border-radius: 50%;
-  width: 256px;
-  height: 256px;
+  width: 128px;
+  height: 128px;
   background-color: rebeccapurple;
   overflow-x: clip;
 }
@@ -375,7 +372,7 @@ body {
   height: 100%;
   background-color: #fff;
   /* Dunno where that extra pixel below is comming from ¯\_(ツ)_/¯ */
-  clip-path: path('M 0,128 L 0,257 L 257,257 L 257,128 A 128 128 0 0 1 0 128');
+  clip-path: path('M 0,64 L 0,128 L 128,128 L 128,64 A 64 64 0 0 1 0 64');
   clip-rule: evenodd;
 }
 
@@ -401,6 +398,8 @@ body {
 }
 
 #footer #contact-box > *:nth-child(3) svg {
+  width: 24px;
+  height: 24px;
   margin-top: 0.5rem;
   fill: rebeccapurple;
 }
