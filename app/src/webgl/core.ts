@@ -546,49 +546,42 @@ type RenderInfo = {
 function adaptiveDownsample(gl: WebGL2RenderingContext, downsample: number | "adaptive") {
     const ext = gl.getExtension("WEBGL_debug_renderer_info")!;
     const vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL);
-    console.log(vendor)
-    switch (typeof downsample) {
-        case "number":
-            return downsample;
-        default:
-            switch (true) {
-                case vendor.includes("NVIDIA"):
-                case vendor.includes("AMD"):
-                case vendor.includes("ARM"):
-                    return 2;
-
-            }
+    
+    if (typeof downsample == "number") {
+        return downsample;
     }
-    return 3;
+    switch (true) {
+        case vendor.includes("NVIDIA"):
+        case vendor.includes("AMD"):
+        case vendor.includes("ARM"):
+            return 2;
+        default:
+            return 3;
+    }
 }
 
 function adaptiveFPSe(gl: WebGL2RenderingContext, fps: number | "adaptive") {
     const ext = gl.getExtension("WEBGL_debug_renderer_info")!;
     const vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL);
 
-    switch (typeof fps) {
-        case "number":
-            return fps;
-        default:
-            switch (true) {
-                case vendor.includes("NVIDIA"):
-                case vendor.includes("AMD"):
-                    return 60;
-                case vendor.includes("ARM"):
-                    return 30;
-
-            }
+    if (typeof fps == "number") {
+        return fps;
     }
-    return 30;
+    switch (true) {
+        case vendor.includes("NVIDIA"):
+        case vendor.includes("AMD"):
+            return 60;
+        default:
+            return 30;
+    }
 }
-
 
 const VERTICES = new Float32Array([
     // xy           uv
-    -1,1,               0,1,
-    -1,-1,              0,0,
-    1,1,                1,1,
-    1,-1,               1,0,
+    -1.0, 1.00,     0, 1,
+    -1.0, -1.0,     0, 0,
+    1.00, 1.00,     1, 1,
+    1.00, -1.0,     1, 0,
 ]);
 
 export class Program<T extends Drawable<T>> {
@@ -599,13 +592,14 @@ export class Program<T extends Drawable<T>> {
     protected uniforms: Map<string, UniformInfo> = null!;
     protected fbos: Array<FrameBufferObject> = null!;
     protected sceneDriver: SceneDriver<T> = null!; 
-    protected eventQueue: EventQueue<T, Event<T>> = null!;
+    protected eventQueue: EventQueue<T, Event<T>, Program<T>|Scene<T>> = null!;
     protected renderInfo: RenderInfo = null!;
-    protected rendering: boolean = false;
     protected plugins: Array<PluginLike<T>> = [];
     protected rdy: Promise<Program<T>> = null!;
     protected time = 0;
     protected resizeRequest = 0;
+    protected switchRequest = "";
+    protected frame = -1;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -768,7 +762,8 @@ export class Program<T extends Drawable<T>> {
             for (const scene of sceneInfo.scenes) {
                 const {name, color} = scene;
                 map.set(scene.name, new Scene<T>(
-                    this.eventQueue,
+                    <EventQueue<T, Event<T>, Scene<T>>>this.eventQueue,
+                    this,
                     this.fbos.slice(0, 2),
                     vaos.get(name)!,
                     drawables.get(name)!,
@@ -784,6 +779,31 @@ export class Program<T extends Drawable<T>> {
             for (const Plugin of plugins) {
                 this.plugins.push(new Plugin(gl, this.sceneDriver.scene()));
             }
+
+            // Start the event queue
+            const fn = () => {
+                const scene = this.sceneDriver.scene();
+
+                // Handle resize requests
+                if (this.resizeRequest) {
+                    this.resize();
+                    this.resizeRequest = 0;
+                    this.eventQueue.fire(this, new Event<T>("resize"));
+                }
+
+                // Handle switch requests
+                if (this.switchRequest != "") {
+                    this.sceneDriver.switch(this.switchRequest);
+                    this.switchRequest = "";
+                }
+
+                // Flush the event queue
+                this.eventQueue
+                    .flush(this)
+                    .flush(scene);
+                requestAnimationFrame(fn);
+            }
+            fn();
 
             return this;
         });
@@ -806,15 +826,10 @@ export class Program<T extends Drawable<T>> {
         const {gl, renderInfo} = this;
 
         if (time - this.time < 1000/adaptiveFPSe(gl, renderInfo.fps)) {
-            requestAnimationFrame(this.draw);
+            this.frame = requestAnimationFrame(this.draw);
             return;
         }
         this.time = time;
-
-        if (this.resizeRequest) {
-            this.resize();
-            this.resizeRequest = 0;
-        }
         
         const [mainFBO, msaaFBO, outFBO] = this.fbos;
         const scene = this.sceneDriver.scene();
@@ -920,46 +935,51 @@ export class Program<T extends Drawable<T>> {
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindVertexArray(null);
 
-        // Flush events
-        this.eventQueue.fire(new Event<T>("done", {shape: null!}));
-        this.eventQueue.flush();
+        // Fire events
+        this.eventQueue
+            .fire(this, new Event<T>("done"))
+            .fire(scene, new Event<T>("done"))
 
-        requestAnimationFrame(this.draw);
+        this.frame = requestAnimationFrame(this.draw);
     }
 
-    switch (name: string) {
-        this.sceneDriver.switch(name);
+    fire(e: Event<T>) {
+        this.eventQueue.fire(this, e);
     }
 
-    get(key: string): Scene<T>|null {
-        return this.sceneDriver.get(key);
+    on<E extends Event<T>>(type: keyof EventMap<T>, handler: EventHandler<T, E>) {
+        this.eventQueue.on(type, this, <EventHandler<T, Event<T>>>handler);
+    }
+
+    switch(scene: string) {
+        this.switchRequest = scene;
+    }
+
+    get(scene: string): Scene<T>|null {
+        return this.sceneDriver.get(scene);
     }
 
     scene() {
         return this.sceneDriver.scene();
     }
 
-    ready(){
+    ready() {
         return this.rdy;
     }
 
+    stop() {
+        cancelAnimationFrame(this.frame);
+        this.frame = -1;
+    }
+
     render() {
-        if (this.rendering) {
+        if (this.frame != -1) {
             return;
         }
-        this.rendering = true;
         return this.rdy.then(() => {
             this.draw = this.draw.bind(this);
-            requestAnimationFrame(this.draw);
+            this.frame = requestAnimationFrame(this.draw);
             return this;
         });
-    }
-
-    fire(e: Event<T>) {
-        this.eventQueue.fire(e);
-    }
-
-    on<E extends Event<T>>(type: keyof EventMap<T>, handler: EventHandler<T, E>) {
-        this.eventQueue.on(type, <EventHandler<T, Event<T>>>handler);
     }
 }

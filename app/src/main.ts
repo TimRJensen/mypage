@@ -141,7 +141,7 @@ import hints from "./hints.ts";
             new Texture(0, 22, {id: 0x404, pos: [-0.3266, 0.0, 0.0], scale: [0.75, 1.0, 0.75]}),
         ]}),
         // Root
-        new RootNode({id: 1, pos: [0.0, 0.0, -0.7059]}),
+        new RootNode({id: 0x1, pos: [0.0, 0.0, -0.7059]}),
         // Help
         new Node({id: 0x50, pos: [0.0, 0.0, 0.5321], shapes: [
             new Edge([0.0, 0.06, 0.5321], [0.0, 0.06, -0.0869], 0x50),
@@ -177,7 +177,7 @@ import hints from "./hints.ts";
         [(PERSONAL_SKILLS << 4) + 0x1, {txt: "about me", shape: shapes[6]}],
         [PERSONAL_SKILLS, {txt: "personal skills", shape: shapes[7]}],
         [ROOT, {txt: "contact", shape: shapes[8]}],
-        [(FIRST << 4) + 0.0, {txt: "second", shape: shapes[9]}],
+        [(FIRST << 4) + 0x0, {txt: "second", shape: shapes[9]}],
         [FIRST, {txt: "first", shape: shapes[10]}],
         [HELP, {txt: "start", shape: shapes[11]}],
         [HAND, {txt: "", shape: shapes[12]}],
@@ -261,7 +261,6 @@ import hints from "./hints.ts";
         PickPlugin,
     ])
         .ready();
-    program.render();
 
     // Handle drag
     const bounds = [[1.5, -1.5], [0.5, -1.75]];
@@ -374,7 +373,7 @@ import hints from "./hints.ts";
     }
 
     const footer = document.querySelector<HTMLFieldSetElement>("#footer")!;
-    program.on("pointerdown", (e: PickPluginEvent) => {
+    function handlePointerDown(e: PickPluginEvent) {
         moveInfoBox(null, 0, infoBox);
 
         if (e.id == 0 || e.id == CLOUD || progress > 0) {
@@ -395,7 +394,7 @@ import hints from "./hints.ts";
             case e.id == TECHNICAL_SKILLS:
             case e.id == FIRST:
             case e.id == HELP:
-                picked[0] = e.id < FIRST ? ROOT : HELP, picked[3] = e.id, picked[4] = -1;
+                picked[0] = e.scene == main ? ROOT : HELP, picked[3] = e.id, picked[4] = -1;
                 map.get(picked[0])!.shape.focus();
                 e.shape.focus();
                 e.shape.parent()?.focus();
@@ -404,7 +403,7 @@ import hints from "./hints.ts";
             case e.id >> 4 == PROJECTS:
             case e.id >> 4 == TECHNICAL_SKILLS:
             case e.id >> 4 == FIRST:
-                picked[0] = e.id >> 4 < FIRST ? ROOT : HELP, picked[3] = e.id >> 4, picked[4] = e.id;
+                picked[0] = e.scene == main ? ROOT : HELP, picked[3] = e.id >> 4, picked[4] = e.id;
                 map.get(picked[0])!.shape.focus();
                 map.get(picked[3])!.shape.focus();
                 e.shape.focus();
@@ -417,7 +416,7 @@ import hints from "./hints.ts";
             case e.id >> 8 == PROJECTS:
             case e.id >> 8 == TECHNICAL_SKILLS:
             case e.id >> 8 == FIRST:
-                picked[0] = e.id >> 8 < FIRST ? ROOT : HELP, picked[3] = e.id >> 8, picked[4] = e.id >> 4;
+                picked[0] = e.scene == main ? ROOT : HELP, picked[3] = e.id >> 8, picked[4] = e.id >> 4;
                 map.get(picked[0])!.shape.focus();
                 map.get(picked[3])!.shape.focus();
                 map.get(picked[4])?.shape.focus();
@@ -427,15 +426,14 @@ import hints from "./hints.ts";
                 if (Math.hypot(e.shape.world.x - cam.x, e.shape.world.z - cam.z) < 0.3714) {
                     return;
                 };
-                // e.shape = (map.get(e.id >> 4) ?? map.get(e.id >> 8))!.shape;
                 break;
         }
 
         panCamera(cam.x, cam.z, e.shape.world.x + offset[0], e.shape.world.z + offset[1]);
-    });
+    }
 
     // Handle pick (hover)
-    program.on("pointermove", (e: PickPluginEvent) => {
+    function handlePointerMove(e: PickPluginEvent) {
         if (picked[1] == e.id || picked[2] == e.id) {
             return;
         }
@@ -451,7 +449,7 @@ import hints from "./hints.ts";
             case e.id == TECHNICAL_SKILLS:
             case e.id == FIRST:
             case e.id == HELP:
-                picked[0] = e.id < FIRST ? ROOT : HELP, picked[1] = e.id, picked[2] = -1;
+                picked[0] = e.scene == main ? ROOT : HELP, picked[1] = e.id, picked[2] = -1;
                 map.get(picked[0])!.shape.show();
                 e.shape.show();
                 e.shape.parent()?.show();
@@ -460,7 +458,7 @@ import hints from "./hints.ts";
             case e.id >> 4 == PROJECTS:
             case e.id >> 4 == TECHNICAL_SKILLS:
             case e.id >> 4 == FIRST:
-                picked[0] = e.id >> 4 < FIRST ? ROOT : HELP, picked[1] = e.id >> 4, picked[2] = e.id;
+                picked[0] = e.scene == main ? ROOT : HELP, picked[1] = e.id >> 4, picked[2] = e.id;
                 map.get(picked[0])!.shape.show();
                 map.get(picked[1])!.shape.show();
                 e.shape.show();
@@ -470,7 +468,7 @@ import hints from "./hints.ts";
             case e.id >> 8 == PROJECTS:
             case e.id >> 8 == TECHNICAL_SKILLS:
             case e.id >> 8 == FIRST:
-                picked[0] = e.id >> 8 < FIRST ? ROOT : HELP, picked[1] = e.id >> 8, picked[2] = e.id >> 4;
+                picked[0] = e.scene == main ? ROOT : HELP, picked[1] = e.id >> 8, picked[2] = e.id >> 4;
                 map.get(picked[0])!.shape.show();
                 map.get(picked[1])!.shape.show();
                 e.shape.show();
@@ -484,7 +482,13 @@ import hints from "./hints.ts";
                 }
                 return;
         }
-    });
+    }
+    const guide = program.get("guide")!;
+    const main = program.get("main")!;
+    main.on("pointerdown", handlePointerDown);
+    main.on("pointermove", handlePointerMove);
+    guide.on("pointerdown", handlePointerDown);
+    guide.on("pointermove", handlePointerMove);
 
     // Handle breadcrumbs
     const breadcrumbs = document.querySelector<HTMLDivElement>("#canvas-box .breadcrumbs")!;
@@ -551,27 +555,11 @@ import hints from "./hints.ts";
 
         breadcrumbs.replaceChildren(...(b.length > 1 ? b : a));
     });
-
+    
     // Handle help
     let helpStarted = 0;
-    const rootTxt = ["@", "breadcrumbs"];
-    const guide = program.get("guide")!;
-    guide.on("switch", (e: SceneEvent<Shape>) => {
-        breadcrumbs.firstElementChild!.textContent = rootTxt[e.next == guide ? 1 : 0];
-        picked[0] = picked[1] = picked[2] = picked[3] = picked[4] = -1;
-        for (const shape of e.prev.drawables) {
-            shape.blur();
-            shape.hide();
-        }
-
-        const shape = map.get(HELP)!.shape;
-        panCamera(cam.x, cam.z, shape.world.x + offset[0], shape.world.z + offset[1]);
-    });
-
     const helpButton = document.querySelector<HTMLDivElement>("#canvas-box .control-box #help")!;
-    helpButton.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-
+    helpButton.addEventListener("pointerdown", () => {
         if (helpStarted) {
             return;
         }
@@ -640,7 +628,7 @@ import hints from "./hints.ts";
                 shape.display = "none";
                 shape.hide();
                 setTimeout(() => {
-                    helpBox.setAttribute("data-show", "0");
+                    helpBox.setAttribute("data-show", "");
                 }, 4000);
                 setTimeout(() => {
                     shape.display = "fixed";
@@ -657,8 +645,7 @@ import hints from "./hints.ts";
                 shape.hide();
                 break;
             case 4:
-                picked[0] = HELP, picked[3] = FIRST, picked[4] = SECOND;
-                
+                picked[0] = HELP, picked[1] = picked[2] = -1, picked[3] = FIRST, picked[4] = SECOND;
                 shape = map.get(SECOND)!.shape;
                 shape.focus();
                 map.get(HELP)!.shape.focus();
@@ -675,8 +662,7 @@ import hints from "./hints.ts";
                 program.switch("main");
 
                 shape.display = "fixed";
-                shape = shape.lastChild()!;
-                shape.display = "inherit";
+                shape.lastChild()!.display = "inherit";
 
                 helpBox.setAttribute("data-show", "1");
                 helpBox.textContent = helpHints[helpStarted - 1];
@@ -697,26 +683,6 @@ import hints from "./hints.ts";
             helpStarted++;
         }, 9000);
     });
-
-    const obs = new IntersectionObserver((entry) => {
-        if (entry[0].intersectionRatio < 0.25) {
-            return;
-        }
-
-        requestAnimationFrame(function fn() {
-            if (globalThis.matchMedia("(orientation: landscape)").matches) {
-                helpStarted = 1;
-                program.switch("guide");
-            } else {
-                requestAnimationFrame(fn);
-            }
-        });
-        
-        obs.disconnect();
-    }, {
-        threshold: 0.25,
-    });
-    obs.observe(canvas);
 
     // Handle cloud
     const cloudStates = [0, 1, 2, 3, 4, 5, 6];
@@ -757,9 +723,8 @@ import hints from "./hints.ts";
     program.on("pointerup", () => {
         if (cloudState == cloudStates[6]) {
             cloudState = cloudStates[0];
-            console.log("foo")
         } else {
-            setTimeout(() => cloudState = 0, 300);
+            setTimeout(() => cloudState = 0, 333);
         }
         cloudDrag = false;
     });
@@ -802,7 +767,55 @@ import hints from "./hints.ts";
         }
     });
 
-    program.render();
+    // Handle switch
+    const rootTxt = ["@", "breadcrumbs"];
+    program.on("switch", (e: SceneEvent<Shape>) => {
+        if (e.scene != e.prev) {
+            return;
+        }
+
+        breadcrumbs.firstElementChild!.textContent = rootTxt[e.next == guide ? 1 : 0];
+        picked[0] = picked[1] = picked[2] = picked[3] = picked[4] = -1;
+        for (const shape of e.prev.drawables) {
+            shape.blur();
+            shape.hide();
+        }
+        
+        const shape = map.get(e.next == guide ? HELP : ROOT)!.shape;
+        panCamera(cam.x, cam.z, shape.world.x + offset[0], shape.world.z + offset[1]);
+    });
+
+    // Handle resize
+    program.on("resize", () => {
+        if (globalThis.matchMedia("(orientation: landscape)").matches) {
+            program.render();
+        } else {
+            moveInfoBox(null, 0, infoBox);
+            moveInfoBox(null, 0, helpBox);
+            program.stop();
+        }
+    })
+
+    // Start the render loop
+    const obs = new IntersectionObserver((entries) => {
+        if (entries[0].intersectionRatio < 0.1) {
+            return;
+        }
+
+        if (globalThis.matchMedia("(orientation: landscape)").matches) {
+            helpStarted = 1;
+            program.switch("guide");
+            program.render();
+        } else {
+            helpStarted = 1;
+            program.switch("guide");
+        }
+
+        obs.disconnect();
+    }, {
+        threshold: 0.5,
+    });
+    obs.observe(canvas);
 })();
 
 // Handle portraits

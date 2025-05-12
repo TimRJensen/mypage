@@ -7,20 +7,25 @@ import vs from "../shaders/vertex-pick.ts";
 import fs from "../shaders/fragment-pick.ts";
 
 export class PickPluginEvent extends Event<Shape> {
+    shape: Shape;
+    scene: Scene<Shape>;
     id: number;
     movementX: number;
     movementY: number;
 
     constructor(
         type: string,
-        {id, shape, movementX, movementY}: {
-            id: number;
+        {shape, scene, id, movementX, movementY}: {
             shape: Shape;
+            scene: Scene<Shape>;
+            id: number;
             movementX: number;
             movementY: number;
         },
     ) {
-        super(type, {shape});
+        super(type);
+        this.shape = shape;
+        this.scene = scene;
         this.id = id;
         this.movementX = movementX;
         this.movementY = movementY;
@@ -53,6 +58,7 @@ function fence(gl: WebGL2RenderingContext, plugin: PickPlugin) {
 
 function handler(gl: WebGL2RenderingContext, scene: Scene<Shape>, plugin: PickPlugin, ) {
     return (e: PointerEvent) => {
+
         if (plugin.fence) {
             return;
         }
@@ -82,20 +88,21 @@ function handler(gl: WebGL2RenderingContext, scene: Scene<Shape>, plugin: PickPl
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         plugin.fence = fence(gl, plugin).then((id) => {
+            const movementX = e.movementX, movementY = e.movementY;
             if (id == 0) {
                 scene.fire(
                     new PickPluginEvent(e.type, {
-                        id, shape: null!, movementX: e.movementX, movementY: e.movementY,
+                        shape: null!, scene, id, movementX, movementY,
                     }),
                 );
                 return;
             }
-    
+
             for (const shape of scene.drawables) {
                 if (shape.id == id) {
                     scene.fire(
                         new PickPluginEvent(e.type, {
-                            id, shape, movementX: e.movementX, movementY: e.movementY,
+                            shape, scene, id, movementX, movementY,
                         }),
                     );
                     break;
@@ -108,7 +115,7 @@ function handler(gl: WebGL2RenderingContext, scene: Scene<Shape>, plugin: PickPl
     
                     scene.fire(
                         new PickPluginEvent(e.type, {
-                            id, shape: child, movementX: e.movementX, movementY: e.movementY,
+                            shape: child, scene, id, movementX, movementY,
                         }),
                     );
                     return;
@@ -119,7 +126,7 @@ function handler(gl: WebGL2RenderingContext, scene: Scene<Shape>, plugin: PickPl
 };
 
 const EVENTS = ["pointermove", "pointerdown", "pointerup"];
-const DUMMY_DRIVER = new EventQueue<Shape, Event<Shape>>(null!);
+const DUMMY_DRIVER = new EventQueue<Shape, Event<Shape>, Scene<Shape>>(null!);
 
 export class PickPlugin implements PluginLike<Shape> {
     readonly n: number;
@@ -176,14 +183,14 @@ export class PickPlugin implements PluginLike<Shape> {
         // Swwitch events on scene switch
         scene.on("switch", function (this: PickPlugin, e: SceneEvent<Shape>) {
             e.next.setters.set("u_id", e.prev.setters.get("u_id")!);
-            e.prev.setters.delete("u_id");
+
             for (const event of EVENTS) {
                 gl.canvas.removeEventListener(event, fn);
             }
             fn = <EventListener>handler(gl, e.next, this);
             for (const event of EVENTS) {
                 gl.canvas.addEventListener(event, fn);
-             }
+            }
         }.bind(this));
     }
 
@@ -202,6 +209,7 @@ export class PickPlugin implements PluginLike<Shape> {
         const {fbos: [fbo], vaos, setters, drawables} = scene;
         scene = new Scene(
             DUMMY_DRIVER,
+            null!,
             scene.fbos,
             scene.vaos,
             scene.drawables,
