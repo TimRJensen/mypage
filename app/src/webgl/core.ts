@@ -543,6 +543,15 @@ type RenderInfo = {
     fps: number | "adaptive";
 }
 
+function userDevice() {
+    switch (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        case true:
+            return "mobile";
+        default:
+            return "desktop"; 
+    };
+}
+
 function adaptiveDownsample(gl: WebGL2RenderingContext, downsample: number | "adaptive") {
     const ext = gl.getExtension("WEBGL_debug_renderer_info")!;
     const vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL);
@@ -551,8 +560,9 @@ function adaptiveDownsample(gl: WebGL2RenderingContext, downsample: number | "ad
         return downsample;
     }
     switch (true) {
-        case vendor.includes("NVIDIA"):
         case vendor.includes("AMD"):
+        case vendor.includes("Apple"):
+        case vendor.includes("NVIDIA"):
         case vendor.includes("ARM"):
             return 2;
         default:
@@ -567,9 +577,11 @@ function adaptiveFPSe(gl: WebGL2RenderingContext, fps: number | "adaptive") {
     if (typeof fps == "number") {
         return fps;
     }
+    const device = userDevice();
     switch (true) {
-        case vendor.includes("NVIDIA"):
-        case vendor.includes("AMD"):
+        case vendor.includes("AMD") && device == "desktop":
+        case vendor.includes("Apple") && device == "desktop":
+        case vendor.includes("NVIDIA") && device == "desktop":
             return 60;
         default:
             return 30;

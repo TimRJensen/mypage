@@ -282,7 +282,7 @@ import hints from "./hints.ts";
         }
 
         view.set(mat4.lookAt(cam, center, up));
-    }, {passive: false});
+    });
     canvas.addEventListener("pointerup", () => {
         if (pointer == -1) {
             return;
@@ -290,7 +290,7 @@ import hints from "./hints.ts";
 
         canvas.releasePointerCapture(pointer);
         pointer = -1;
-    }, {passive: false});
+    });
     canvas.addEventListener("pointerdown", (e) => {
         if (progress != 0) {
             return;
@@ -298,7 +298,7 @@ import hints from "./hints.ts";
 
         canvas.setPointerCapture(e.pointerId);
         pointer = e.pointerId;
-    }, {passive: false});
+    });
 
     // Handle pick (click)
     // picked[0] == root, picked[1 && 2] == hovered, picked[3 && 4] == focused
@@ -687,6 +687,7 @@ import hints from "./hints.ts";
     // Handle cloud
     const cloudStates = [0, 1, 2, 3, 4, 5, 6];
     let cloudState = cloudStates[0];
+    let nextState = 0;
     let cloudDrag = false;
     let cloudTrigger = 0;
     program.on("pointerdown", (e: PickPluginEvent) => {
@@ -698,20 +699,20 @@ import hints from "./hints.ts";
         switch (true) {
             case rnd < 0.1:
             case cloudTrigger == 9:
-                cloudState = cloudStates[5];
+                nextState = cloudStates[5];
                 cloudTrigger = 0;
                 break;
             case rnd < 0.325:
-                cloudState = cloudStates[1];
+                nextState = cloudStates[1];
                 break;
             case rnd < 0.55:
-                cloudState = cloudStates[2];
+                nextState = cloudStates[2];
                 break;
             case rnd < 0.775:
-                cloudState = cloudStates[3];
+                nextState = cloudStates[3];
                 break;
             case rnd < 1:
-                cloudState = cloudStates[4];
+                nextState = cloudStates[4];
                 break;
         }
 
@@ -720,16 +721,17 @@ import hints from "./hints.ts";
         cloudTrigger++;
     });
 
-    program.on("pointerup", () => {
+    canvas.addEventListener("pointerup", () => {
         if (cloudState == cloudStates[6]) {
             cloudState = cloudStates[0];
         } else {
-            setTimeout(() => cloudState = 0, 333);
+            cloudState = nextState;
+            setTimeout(() => cloudState = cloudStates[0], 333);
         }
         cloudDrag = false;
     });
 
-    program.on("pointermove", (e: PickPluginEvent) => {
+    canvas.addEventListener("pointermove", (e) => {
         if (!cloudDrag) {
             return;
         }
