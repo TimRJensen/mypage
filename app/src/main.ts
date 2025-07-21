@@ -122,8 +122,9 @@ import hints from "./hints.ts";
         new Node({id: 0x3, pos: [0.4952, 0.0, -0.4583], shapes: [
             new Text(1, 13, {pos: [-0.05, 0.0025, -0.05], rotation: [Math.PI, Math.PI/4, 0.0]}),
             new Edge([0.4952, 0.07, -0.4583], [0.024, 0.06, -0.7092], 0x3),
-            new Texture(2, 2, {id: 0x301, pos: [0.2747, 0.0, 0.1500], rotation: [-Math.PI/2, 0.0, 0.5]}),
-            new Texture(2, 0, {id: 0x300, pos: [0.3885, 0.0, 0.0], rotation: [-Math.PI/2, 0.0, 0.5]}),
+            new Texture(2, 2, {id: 0x302, pos: [0.2747, 0.0, 0.1500], rotation: [-Math.PI/2, 0.0, 0.5]}),
+            new Texture(2, 1, {id: 0x301, pos: [0.3885, 0.0, 0.0], rotation: [-Math.PI/2, 0.0, 0.5]}),
+            new Texture(2, 0, {id: 0x300, pos: [0.2747, 0.0, 0.0], rotation: [-Math.PI/2, 0.0, 0.5]}),
         ]}),
         // About me
         new Node({id: 0x41, pos: [-1.1142, 0.0, 0.0369], shapes: [

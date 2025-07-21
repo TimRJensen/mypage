@@ -6,7 +6,7 @@ export default {
     // Technical skills
     0x200: {
         txt: "<b>Vue.js</b><br/><br/>I like the simplicity of Vue and that it doesn't include all the frustration found in other directive driven frameworks. However, I've only made very simple projects with it.",
-        rating: 3,
+        rating: 5,
     },
     0x201: {
         txt: "<b>React</b><br/><br/>I've been using react extensively and I really like it for its unopinionated minimal API and emphasis on composition.",
@@ -34,15 +34,15 @@ export default {
     },
     0x210: {
         txt: '<b>Git</b><br/><br/>I know about 12 Git commands, where the first 4 are stage, commit, pull and push. The last eight are for when I messed up.',
-        rating: 4,
+        rating: 3,
     },
     0x211: {
         txt: '<b>Docker</b><br/><br/>I love docker. It makes it so easy to spin up a new environment and share it with others. Most of the projects I work on are containerized.',
-        rating: 5,
+        rating: 4,
     },
     0x212: {
         txt: "<b>PostgreSQL</b><br/><br/>The databases I've worked with are mostly ones I created, so I'm quite familiar with schemas, views and how to query data.",
-        rating: 5,
+        rating: 4,
     },
     0x213: {
         txt: "<b>Next.js</b><br/><br/>I've used Next.js a couple of times and it's certainly a good framework. I however find it a bit opinionated and prefer to use a custom setup.",
@@ -82,11 +82,11 @@ export default {
         rating: -1,
     },
     0x301: {
-        txt: "<b>Aruco generator</b><br/><br/>A very simple app, that can generate aruco codes. The codes are mainly used in robotics.<br/><br/><a href='https://aruco-generator.sliplane.app/' target='_blank'>page</a><a href='https://github.com/TimRJensen/aruco-generator' target='_blank'>source</a>",
+        txt: "<b>ScanLadder</b><br/><br/>A small dashboard service, that let users create QR codes and associate them with documents. It also contains a mobile PWA.<br/><br/><a href='https://scanladder.sliplane.app' target='_blank'>page</a>",
         rating: -1,
     },
     0x302: {
-        txt: "<b>Breakout & Galage</b><br/><br/>A cool little project we did at the institute, where we recreated old arcade games.<br/><br/><a href='https://github.com/TimRJensen/DIKUGames' target='_blank'>source</a>",
+        txt: "<b>Aruco generator</b><br/><br/>A very simple app, that can generate aruco codes. The codes are mainly used in robotics.<br/><br/><a href='https://aruco-generator.sliplane.app/' target='_blank'>page</a><a href='https://github.com/TimRJensen/aruco-generator' target='_blank'>source</a>",
         rating: -1,
     },
     // Personal skills
